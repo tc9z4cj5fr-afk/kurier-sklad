@@ -857,6 +857,70 @@
       .catch(function () { state.texts = {}; });
   }
 
+  // ---------------- Показ (?demo=1): запись нажатий ----------------
+  // Только в демо-режиме. Каждое нажатие на кнопку или ссылку записывается как «время, должность, экран, текст кнопки»
+  // и раз в 10 секунд пачкой уходит на сервер действием logDemo (без входа). Метка берётся из адреса: ?demo=1&kto=nastya.
+  // Ничего другого из демо на сервер не уходит; текст в полях ввода не читается. Лимиты: 300 событий на посетителя в час,
+  // не больше 50 в пачке. Вверху страницы всегда видно предупреждение, что нажатия записываются.
+  (function pokazZapis() {
+    if (!DEMO) return;
+    var MAX_HOUR = 300, MAX_BATCH = 50, EVERY_MS = 10000;
+    var kto = "";
+    try { kto = decodeURIComponent((/[?&]kto=([^&#]*)/.exec(location.search) || [0, ""])[1]); } catch (e) {}
+    kto = kto.toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 20);
+    var vid = "";
+    try { vid = localStorage.getItem("ppm_pokaz_vid") || ""; } catch (e) {}
+    if (!vid) {
+      vid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      try { localStorage.setItem("ppm_pokaz_vid", vid); } catch (e) {}
+    }
+    var queue = [];
+
+    // Счётчик за час хранится в браузере, чтобы перезагрузка страницы его не обнуляла
+    function hourLeft(take) {
+      var h = { s: Date.now(), n: 0 };
+      try { h = JSON.parse(localStorage.getItem("ppm_pokaz_h") || "") || h; } catch (e) {}
+      if (!h.s || Date.now() - h.s > 3600000) h = { s: Date.now(), n: 0 };
+      var left = Math.max(0, MAX_HOUR - (h.n || 0));
+      if (take && left > 0) { h.n = (h.n || 0) + 1; try { localStorage.setItem("ppm_pokaz_h", JSON.stringify(h)); } catch (e) {} }
+      return left;
+    }
+
+    function add(txt) {
+      if (hourLeft(true) <= 0) return;
+      queue.push({ t: new Date().toISOString(), role: state.role || "", tab: state.tab || "", txt: String(txt || "").slice(0, 80) });
+    }
+
+    function send(final) {
+      if (!queue.length) return;
+      var batch = queue.splice(0, MAX_BATCH);
+      var body = JSON.stringify({ kto: kto, vid: vid, events: batch });
+      var url = API_URL + "?action=logDemo";
+      try {
+        if (final && navigator.sendBeacon) { navigator.sendBeacon(url, new Blob([body], { type: "text/plain;charset=UTF-8" })); return; }
+        fetch(url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: body, keepalive: true })
+          .catch(function () {});
+      } catch (e) {}
+    }
+
+    document.addEventListener("click", function (ev) {
+      var el = ev.target && ev.target.closest ? ev.target.closest("button, a, [data-tab], [role=button], .role-card, .chip, summary") : null;
+      if (!el || el.id === "pokaz-notice") return;
+      var txt = (el.innerText || el.getAttribute("aria-label") || el.getAttribute("title") || el.getAttribute("data-tab") || "").replace(/\s+/g, " ").trim();
+      add(txt || "(кнопка без текста)");
+    }, true);
+
+    var notice = document.createElement("div");
+    notice.id = "pokaz-notice";
+    notice.style.cssText = "background:#2a2f3a;color:#e8ecf3;font:12px/1.4 system-ui,sans-serif;padding:6px 12px;text-align:center";
+    notice.textContent = "Это показ: ваши нажатия на кнопки записываются, чтобы улучшить приложение. Личные данные и текст из полей не собираются.";
+    if (document.body) document.body.insertBefore(notice, document.body.firstChild);
+
+    add("(открыл показ)");
+    setInterval(function () { send(false); }, EVERY_MS);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") send(true); });
+    window.addEventListener("pagehide", function () { send(true); });
+  })();
   function demoProducts() {
     // price — цена за грамм, stock — остаток в граммах
     return [
