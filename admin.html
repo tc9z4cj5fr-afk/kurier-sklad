@@ -1,0 +1,3369 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ЦУБ · Центр управления бизнесом</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #f5f6f7;
+    --surface: #ffffff;
+    --surface-2: #eef0f2;
+    --text: #14171c;
+    --muted: #5b6472;
+    --border: #dee2e6;
+    --accent: #2b3648;
+    --accent-strong: #171d28;
+    --accent-soft: #e9ebee;
+    --shadow: 0 1px 2px rgba(20, 23, 28, 0.05), 0 4px 16px rgba(20, 23, 28, 0.05);
+    --ok: #1f7a52;
+    --ok-bg: #e6f4ee;
+    --warn: #9a6a10;
+    --warn-bg: #f7f0dd;
+    --info: #2f5aa3;
+    --info-bg: #e9eefb;
+    --danger: #ac3038;
+    --danger-bg: #fbe9ea;
+    --radius-lg: 14px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #101216;
+    --surface: #171a1f;
+    --surface-2: #1f232a;
+    --text: #edeff2;
+    --muted: #8b93a1;
+    --border: #2a2f37;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px rgba(0,0,0,0.35);
+    --accent: #c3cbdb;
+    --accent-strong: #eef1f7;
+    --accent-soft: #232833;
+    --ok-bg: #12301f;
+    --warn-bg: #332a10;
+    --info-bg: #16233c;
+    --danger-bg: #3a1a1d;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101216;
+      --surface: #171a1f;
+      --surface-2: #1f232a;
+      --text: #edeff2;
+      --muted: #8b93a1;
+      --border: #2a2f37;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px rgba(0,0,0,0.35);
+      --accent: #c3cbdb;
+      --accent-strong: #eef1f7;
+      --accent-soft: #232833;
+      --ok-bg: #12301f;
+      --warn-bg: #332a10;
+      --info-bg: #16233c;
+      --danger-bg: #3a1a1d;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root { min-height: 100%; display: flex; justify-content: center; }
+
+  .shell {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  @media (min-width: 600px) {
+    body { background: var(--surface-2); padding: 24px 0; }
+    .shell {
+      min-height: calc(100vh - 48px);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+  }
+
+  button, select, input, textarea { font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .eyebrow {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- Login ---------- */
+  .login {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    color: var(--text);
+    padding: 40px 24px 28px;
+  }
+  .login-head { margin-bottom: 30px; }
+  .login-head .mark {
+    display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; margin-bottom: 16px; color: var(--text);
+  }
+  .login-head .mark svg { width: 44px; height: 44px; display: block; }
+  .login-head .eyebrow { display: block; margin-bottom: 8px; }
+  .login-head h1 { font-size: 21px; font-weight: 700; margin: 0 0 6px; text-wrap: balance; letter-spacing: -0.01em; }
+  .login-head p { margin: 0; font-size: 13px; color: var(--muted); }
+
+  .id-field {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;
+    background: var(--surface-2); margin-bottom: 16px;
+  }
+  .id-field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+  .id-field input {
+    width: 100%; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px;
+  }
+  .id-field .hint { font-size: 11px; color: var(--muted); margin-top: 7px; }
+
+  /* ---------- Shell after login ---------- */
+  .topbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--surface); z-index: 5;
+  }
+  .topbar .avatar {
+    width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; color: var(--text); flex-shrink: 0;
+  }
+  .topbar .avatar svg { width: 16px; height: 16px; display: block; }
+  .topbar .who { flex: 1; min-width: 0; }
+  .topbar .who .name { font-size: 12.5px; font-weight: 700; }
+  .topbar .who .role { font-size: 11px; color: var(--muted); }
+  .topbar .switch-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    border-radius: var(--radius-sm); padding: 7px 10px; font-size: 12px; cursor: pointer;
+  }
+  .topbar .switch-btn:hover { background: var(--surface-2); }
+
+  main { flex: 1; padding: 18px 16px; padding-bottom: 88px; overflow-y: auto; }
+  .screen-title { font-size: 17px; font-weight: 700; margin: 2px 0 4px; text-wrap: balance; letter-spacing: -0.01em; }
+  .screen-sub { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
+  .screen-title + .screen-sub { margin-top: 0; }
+  .screen-title-row { margin-bottom: 16px; }
+
+  /* ---------- Bottom nav ---------- */
+  nav.tabbar {
+    position: sticky; bottom: 0; left: 0; right: 0;
+    display: flex; background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 0 4px calc(0px + env(safe-area-inset-bottom));
+    z-index: 5;
+  }
+  nav.tabbar button {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    background: none; border: none; border-top: 2px solid transparent; color: var(--muted); font-size: 11.5px; font-weight: 500;
+    padding: 13px 2px 11px; cursor: pointer; position: relative;
+  }
+  nav.tabbar button.active { color: var(--text); font-weight: 700; border-top-color: var(--accent); }
+
+  /* ---------- Cards / rows ---------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .row-list { display: flex; flex-direction: column; gap: 10px; }
+  .row-card {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 12px;
+    display: flex; flex-direction: column; gap: 8px; background: var(--surface);
+  }
+  .row-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .row-top .id { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .row-top .date { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
+    padding: 4px 9px 4px 7px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .pill.waiting { background: var(--warn-bg); color: var(--warn); }
+  .pill.waiting .dot { background: var(--warn); }
+  .pill.transit { background: var(--info-bg); color: var(--info); }
+  .pill.transit .dot { background: var(--info); }
+  .pill.delivered { background: var(--ok-bg); color: var(--ok); }
+  .pill.delivered .dot { background: var(--ok); }
+  .pill.cancelled { background: var(--danger-bg); color: var(--danger); }
+  .pill.cancelled .dot { background: var(--danger); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .field label { font-size: 11px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+  .field input, .field textarea, .field select {
+    border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px;
+    font-size: 13.5px; background: var(--surface); color: var(--text); font-family: inherit;
+  }
+  .field textarea { resize: vertical; }
+
+  .btn-primary {
+    width: 100%; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-weight: 700;
+    font-size: 14px; padding: 13px; border-radius: var(--radius); cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+  .btn-primary:disabled { opacity: 0.5; cursor: default; }
+  .btn-secondary {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    font-weight: 600; font-size: 13px; padding: 10px 14px; border-radius: var(--radius); cursor: pointer;
+  }
+  .btn-secondary:hover { background: var(--surface-2); }
+  .act-btn {
+    font-size: 12px; font-weight: 600; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); padding: 6px 10px;
+    background: var(--surface); color: var(--text); cursor: pointer;
+    text-decoration: none; display: inline-flex; align-items: center;
+  }
+  .act-btn:hover { background: var(--surface-2); }
+  .act-btn.danger { color: var(--danger); }
+
+  .empty-state { text-align: center; padding: 52px 16px; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); }
+  .empty-state .eyebrow { display: block; margin-bottom: 6px; }
+  .empty-state p { font-size: 13px; margin: 0; }
+
+  /* ---------- Metrics ---------- */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .stat-card .val { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .stat-card .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ---------- Аналитика ---------- */
+  .bars { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-row .lbl { width: 44px; font-size: 11px; color: var(--muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .bar-track { flex: 1; height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+  .bar-row .num { width: 88px; text-align: right; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+  .pnl-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .pnl-row:last-of-type { border-bottom: none; padding-bottom: 2px; }
+  .pnl-row .lbl { font-size: 12.5px; color: var(--muted); }
+  .pnl-row .num { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pnl-row.total .lbl { color: var(--text); font-weight: 700; }
+  .pnl-row.total .num { font-weight: 700; }
+  .pnl-row .num.danger, .unit-row .m.danger { color: var(--danger); }
+
+  .unit-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .unit-row:last-of-type { border-bottom: none; padding-bottom: 2px; }
+  .unit-row .n { font-size: 13px; font-weight: 600; }
+  .unit-row .s { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .unit-row .m { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+  .unit-row .m .sub { display: block; font-size: 10px; font-weight: 500; }
+
+  /* ---------- ЦУБ specifics ---------- */
+  .state-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 10px 0 14px; }
+  .state-line { font-size: 16px; font-weight: 700; }
+  .link-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .kv-row { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .kv-row:first-of-type { padding-top: 2px; }
+  .kv-row:last-of-type { border-bottom: none; padding-bottom: 2px; }
+  .kv-key {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.04em; color: var(--muted);
+  }
+  .kv-row input {
+    border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 11px;
+    font-size: 13px; background: var(--surface); color: var(--text); width: 100%;
+  }
+  .legend { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 8px 0 0; }
+  .legend code { font-family: var(--mono); font-size: 11px; color: var(--text); }
+  .hint-note { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 12px 0 0; }
+  .task-text { font-size: 13px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+
+  .section-gap { margin-top: 24px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%);
+    background: var(--accent-strong); color: var(--surface); font-size: 12.5px; font-weight: 600;
+    padding: 10px 16px; border-radius: var(--radius-sm); box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none; transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 20; white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toast { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="root"><div class="shell" id="shell"></div></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var API_URL = "https://script.google.com/macros/s/AKfycbyJERQB9Gh087cRwav4RsMevwp3p1LnZWmoqVK4G8OqidhXML8RPC1GEmSBBJUEyaJo/exec";
+  var MARK =
+    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M4.5 7h15M4.5 12h15M4.5 17h15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' +
+    '<circle cx="9.5" cy="7" r="2.1" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>' +
+    '<circle cx="15" cy="12" r="2.1" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>' +
+    '<circle cx="8" cy="17" r="2.1" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>' +
+    '</svg>';
+
+  var TABS = [
+    { id: "status", label: "Статус" },
+    { id: "analytics", label: "Аналитика" },
+    { id: "texts", label: "Настройки" },
+    { id: "products", label: "Товары" },
+    { id: "people", label: "Люди" },
+    { id: "zones", label: "Зоны" },
+    { id: "points", label: "Пункты" },
+    { id: "money", label: "Деньги" },
+    { id: "zavozy", label: "Завозы" },
+    { id: "claude", label: "Чат с админом" }
+  ];
+
+  // Какие разрешения открывают вкладку пульта (dogovor/RAZRESHENIYA.md, «Вкладки ЦУБа»): нужно любое из
+  var CUB_TAB_NEED = {
+    status: ["bot_manage", "settings_edit", "metrics_view"],
+    analytics: ["finance_view"],
+    texts: ["settings_edit"],
+    products: ["products_edit", "stock_edit"],
+    people: ["people_view"],
+    zones: ["zones_edit"],
+    points: ["points_edit"],
+    money: ["cash_manage", "cash_handover", "settings_edit"],
+    zavozy: ["proof_view"],
+    claude: ["tasks_manage"]
+  };
+
+  var ROLES = [
+    { id: "owner", label: "Владелец" },
+    { id: "admin", label: "Администратор" },
+    { id: "kladovshchik", label: "Кладовщик" },
+    { id: "prodavec", label: "Продавец" },
+    { id: "dostavshchik", label: "Доставщик" },
+    { id: "client", label: "Клиент" }
+  ];
+
+  var tg = (typeof window.Telegram !== "undefined" && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+
+  var state = {
+    cubId: localStorage.getItem("cub_id") || "",
+    role: localStorage.getItem("cub_role") || "owner",
+    cubToken: localStorage.getItem("cub_token") || "",
+    tab: "status",
+    texts: {}
+  };
+  if (state.role === "buh") state.tab = "analytics";
+  // Пульт без пропуска бесполезен (сервер откажет) — сразу на экран входа
+  if (state.cubId && !state.cubToken) state.cubId = "";
+
+  // ---------------- API ----------------
+  function apiPost(action, payload) {
+    var body = payload || {};
+    // Общего ключа в коде страницы нет. Пропуск выдаёт сервер после пароля владельца и подписывает
+    // сам; он живёт ограниченное время (по умолчанию 12 ч), по нему сервер даёт права ЦУБ
+    if (state.cubToken) body.cubToken = state.cubToken;
+    return fetch(API_URL + "?action=" + encodeURIComponent(action), {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); });
+  }
+  // Пропуск истёк или прав нет — выходим на экран входа, чтобы войти заново
+  function cubLogout_() {
+    state.cubId = "";
+    state.cubToken = "";
+    localStorage.removeItem("cub_id");
+    localStorage.removeItem("cub_role");
+    localStorage.removeItem("cub_token");
+    setTimeout(render, 60);
+  }
+  function assertOk(res) {
+    if (res && res.success === false) {
+      if (res.authRequired) cubLogout_();
+      throw new Error(res.error || "Ошибка сервера");
+    }
+    return res;
+  }
+
+  // ---------------- helpers ----------------
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function errMsg(e) {
+    return (e && e.message) ? e.message : "Ошибка запроса";
+  }
+  function money(n) {
+    return fmtMoney(n);
+  }
+  function num(v) {
+    var n = parseFloat(v);
+    return isFinite(n) ? n : 0;
+  }
+  function fmtDate(v) {
+    if (!v) return "";
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" });
+  }
+  // Список месяцев для отчёта и выгрузка CSV
+  var MONTH_NAMES_RU = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"];
+  function monthKeyNow_() {
+    var d = new Date();
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
+  }
+  function monthOptionsHTML_(sel) {
+    var out = "";
+    var d = new Date();
+    for (var i = 0; i < 12; i++) {
+      var val = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
+      out += '<option value="' + val + '"' + (val === (sel || monthKeyNow_()) ? " selected" : "") + '>' +
+        MONTH_NAMES_RU[d.getMonth()] + " " + d.getFullYear() + '</option>';
+      d.setDate(1);
+      d.setMonth(d.getMonth() - 1);
+    }
+    return out;
+  }
+  function csvCell_(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+  // \u0421\u043A\u0430\u0447\u0438\u0432\u0430\u043D\u0438\u0435 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435: \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0440\u043E\u0431\u0443\u0435\u043C \u0441\u0438\u0441\u0442\u0435\u043C\u043D\u043E\u0435 \u00AB\u041F\u043E\u0434\u0435\u043B\u0438\u0442\u044C\u0441\u044F\u00BB (\u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0441\u0430\u043C
+  // \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0438\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u0444\u0430\u0439\u043B) \u2014 \u043E\u0431\u044B\u0447\u043D\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430-\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0432\u043D\u0443\u0442\u0440\u0438 Telegram \u0438 \u0447\u0430\u0441\u0442\u0438
+  // \u043C\u043E\u0431\u0438\u043B\u044C\u043D\u044B\u0445 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u043E\u0432 \u043C\u043E\u043B\u0447\u0430 \u043D\u0435 \u0441\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u0435\u0442.
+  function downloadCsv_(rows, fname) {
+    var csv = "\uFEFF" + rows.map(function (r) { return r.map(csvCell_).join(";"); }).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    var file = null;
+    try { file = new File([blob], fname, { type: "text/csv" }); } catch (e) {}
+    if (file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: fname }).catch(function () { blobDownload_(blob, fname); });
+      return;
+    }
+    blobDownload_(blob, fname);
+  }
+  function blobDownload_(blob, fname) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  // Фото с телефона: ужимаем до 1200 px по большой стороне и отдаём base64 (JPEG)
+  function fileToJpegBase64_(file, maxSide, cb) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      try {
+        var k = Math.min(1, maxSide / Math.max(img.width, img.height));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * k));
+        c.height = Math.max(1, Math.round(img.height * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        cb(c.toDataURL("image/jpeg", 0.85).split(",")[1] || null);
+      } catch (e) { URL.revokeObjectURL(url); cb(null); }
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); cb(null); };
+    img.src = url;
+  }
+  var toastTimer = null;
+  function toast(msg) {
+    var el = document.getElementById("toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+  function loadingHTML(label) {
+    return '<div class="empty-state"><span class="eyebrow">' + esc(label || "Загрузка") + '</span><p>Загрузка…</p></div>';
+  }
+  function errorHTML(msg) {
+    return '<div class="empty-state"><span class="eyebrow">Ошибка</span><p>' + esc(msg) + '</p></div>';
+  }
+  function fieldHTML(label, inner) {
+    return '<div class="field"><label>' + label + '</label>' + inner + '</div>';
+  }
+  function inputHTML(f, value, attrs) {
+    return '<input data-f="' + f + '" value="' + esc(value == null ? "" : value) + '" ' + (attrs || "") + ' />';
+  }
+  function roleSelectHTML(f, current) {
+    return '<select data-f="' + f + '">' +
+      ROLES.map(function (r) {
+        return '<option value="' + r.id + '"' + (r.id === current ? " selected" : "") + '>' + r.label + '</option>';
+      }).join("") +
+      '</select>';
+  }
+
+  // ---------------- Настройки: чтение значений ----------------
+  // Запасные значения берутся из SETTINGS_SCHEMA (cub/vkladka-teksty.js): один список, свой текст не пишем.
+  var defaultsCache_ = null;
+  function defaultTexts_() {
+    if (!defaultsCache_) {
+      defaultsCache_ = {};
+      SETTINGS_SCHEMA.forEach(function (f) { defaultsCache_[f.k] = f.d; });
+    }
+    return defaultsCache_;
+  }
+  function t(key) {
+    var v = state.texts && state.texts[key];
+    if (typeof v === "string" && v.trim() !== "") return v;
+    return defaultTexts_()[key] || "";
+  }
+  // Подгрузить настройки (после входа и при старте): цвета, название, формат сумм для всего пульта
+  function loadSettings() {
+    return apiPost("getTexts")
+      .then(function (res) {
+        if (res && res.success !== false) {
+          state.texts = res.texts || {};
+          applyBranding("cub");
+        }
+      })
+      .catch(function () {});
+  }
+
+  // === ОБЩИЙ КОД НАСТРОЕК: тот же текст в vitrina/yadro-znachki-i-teksty.js; сверяет proverki/02-nastroyki.js ===
+  // Читает настройки через t(ключ). Деньги, единицы, список валют, цвета.
+  function numSetting_(key, def) {
+    var raw = String(t(key)).replace(",", ".");
+    if (raw.trim() === "") return def;
+    var n = Number(raw);
+    return isFinite(n) ? n : def;
+  }
+  function numberLocale() { return String(t("pub_number_locale") || "").trim() || "ru-RU"; }
+  function fmtNum(n, dec) {
+    var v = Number(n) || 0;
+    try {
+      return v.toLocaleString(numberLocale(), dec == null ? {} : { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    } catch (e) { return String(v); }
+  }
+  function currencySym() { return String(t("pub_currency_symbol") || "").trim(); }
+  function currencyDecimals() {
+    var d = Math.round(numSetting_("pub_currency_decimals", 0));
+    return d < 0 ? 0 : (d > 4 ? 4 : d);
+  }
+  // Сумма в основной валюте: символ и его место задаёт владелец
+  function fmtMoney(n) {
+    var s = fmtNum(n, currencyDecimals()), sym = currencySym();
+    if (!sym) return s;
+    return String(t("pub_currency_position")).trim() === "before" ? sym + " " + s : s + " " + sym;
+  }
+  function unitShort() { return String(t("pub_unit_short") || "").trim(); }
+  function unitName() { return String(t("pub_unit_name") || "").trim(); }
+  function unitPrice(n) { var u = unitShort(); return fmtMoney(n) + (u ? "/" + u : ""); }
+  function fmtQty(q) { var u = unitShort(); return fmtNum(q) + (u ? " " + u : ""); }
+  function qtyStep() { var s = numSetting_("pub_qty_step", 1); return s > 0 ? s : 1; }
+  function qtyMin() { var m = numSetting_("pub_qty_min", 1); return m > 0 ? m : qtyStep(); }
+  // Быстрые количества: числа через пробел или «;» (запятая — десятичная)
+  function qtyPresets() {
+    var out = String(t("pub_qty_presets") || "").split(/[;\s]+/)
+      .map(function (x) { return Number(x.replace(",", ".")); })
+      .filter(function (x) { return isFinite(x) && x > 0; });
+    return out.length ? out : [qtyMin()];
+  }
+  // Дополнительные валюты (порядок = порядок показа): [{code, symbol, rate, pay}]
+  // rate — сколько этой валюты в одной основной единице; pay — принимается ли оплата в ней
+  function getCurrencies() {
+    var list;
+    try { list = JSON.parse(t("pub_currencies") || "[]"); } catch (e) { list = []; }
+    if (!Array.isArray(list)) return [];
+    return list.map(function (c) {
+      c = c || {};
+      var code = String(c.code || "").trim();
+      return {
+        code: code,
+        symbol: String(c.symbol || code).trim(),
+        rate: Number(String(c.rate == null ? "" : c.rate).replace(",", ".")) || 0,
+        pay: c.pay === true || c.pay === 1 || c.pay === "1"
+      };
+    }).filter(function (c) { return c.code; });
+  }
+  // Подсказки «сколько это в других валютах» для суммы в основной
+  function currencyHints(n) {
+    return getCurrencies().filter(function (c) { return c.rate > 0; }).map(function (c) {
+      var v = (Number(n) || 0) * c.rate;
+      return fmtNum(v, v >= 100 ? 0 : 2) + " " + c.symbol;
+    });
+  }
+  var BRAND_FONTS_ = {
+    serif: 'Georgia, "Times New Roman", serif',
+    rounded: 'ui-rounded, "SF Pro Rounded", Nunito, system-ui, sans-serif',
+    mono: 'ui-monospace, Menlo, Consolas, monospace'
+  };
+  function hexOk_(h) { return /^#[0-9a-fA-F]{6}$/.test(String(h || "").trim()); }
+  function mixHex_(a, b, k) {
+    var pa = a.slice(1).match(/../g), pb = b.slice(1).match(/../g);
+    return "#" + pa.map(function (x, i) {
+      var v = parseInt(x, 16), w = parseInt(pb[i], 16);
+      return ("0" + Math.round(v + (w - v) * k).toString(16)).slice(-2);
+    }).join("");
+  }
+  // Цвет и шрифт из настроек -> правила CSS (поверх палитры из vid-tsveta-i-shrifty.css)
+  function brandCss() {
+    var c = String(t("pub_color_accent") || "").trim(), cd = String(t("pub_color_accent_dark") || "").trim();
+    var light = "", dark = "", css = "";
+    if (hexOk_(c)) light = "--accent:" + c + ";--accent-strong:" + mixHex_(c, "#000000", 0.4) + ";--accent-soft:" + mixHex_(c, "#ffffff", 0.9) + ";";
+    var d = hexOk_(cd) ? cd : (hexOk_(c) ? mixHex_(c, "#ffffff", 0.55) : "");
+    if (d) dark = "--accent:" + d + ";--accent-strong:" + mixHex_(d, "#ffffff", 0.5) + ";--accent-soft:" + mixHex_(d, "#171a1f", 0.85) + ";";
+    var fam = BRAND_FONTS_[String(t("pub_font_style") || "").trim()];
+    if (light || fam) css += ":root{" + light + (fam ? "--font:" + fam + ";" : "") + "}";
+    if (dark) css += ':root[data-theme="dark"]{' + dark + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' + dark + '}}';
+    return css;
+  }
+  // Название вкладки браузера, цвета, шрифт, тема. page: "cub" для пульта, иначе витрина
+  function applyBranding(page) {
+    try {
+      var title = String(t(page === "cub" ? "pub_cub_name" : "app_name") || "").trim();
+      if (title) document.title = title;
+      var el = document.getElementById("brand-style");
+      if (!el) { el = document.createElement("style"); el.id = "brand-style"; document.head.appendChild(el); }
+      el.textContent = brandCss();
+      var th = String(t("pub_theme_default") || "").trim();
+      if (th === "light" || th === "dark") document.documentElement.setAttribute("data-theme", th);
+      else document.documentElement.removeAttribute("data-theme");
+    } catch (e) {}
+  }
+  // === конец общего кода настроек ===
+
+  // ---------------- разрешения и должности (отдел 01) ----------------
+  // Двойник списка из vitrina/yadro-roli-i-menyu.js; источник — dogovor/RAZRESHENIYA.md.
+  var PERMISSIONS = [
+    ["cub_enter", "Вход в пульт", "Вход"],
+    ["catalog_view", "Видеть каталог и остатки", "Товары и склад"],
+    ["stock_edit", "Приход товара и остатки", "Товары и склад"],
+    ["products_edit", "Карточки товара, фото, цены", "Товары и склад"],
+    ["order_create", "Оформлять свои заказы", "Заказы"],
+    ["orders_view", "Видеть все заказы", "Заказы"],
+    ["orders_manage", "Менять статусы, возвраты, одобрение", "Заказы"],
+    ["payment_confirm", "Подтверждать оплату", "Заказы"],
+    ["quick_sale", "Быстрая продажа на месте", "Заказы"],
+    ["courier_work", "Работа курьера: очередь, доставка, сдача", "Курьер"],
+    ["zones_edit", "Зоны и пункты самовывоза", "Пункты и зоны"],
+    ["metrics_view", "Метрики", "Отчёты"],
+    ["dashboard_view", "Сводка владельца", "Отчёты"],
+    ["finance_view", "Аналитика и прибыль", "Деньги"],
+    ["finance_edit", "Вносить расходы", "Деньги"],
+    ["people_view", "Видеть людей и должности", "Люди"],
+    ["people_manage", "Добавлять людей и назначать должности", "Люди"],
+    ["positions_manage", "Создавать и менять должности", "Люди"],
+    ["settings_edit", "Менять тексты и настройки", "Система"],
+    ["bot_manage", "Бот и запасные боты", "Система"],
+    ["tasks_manage", "Задания для Claude", "Система"],
+    ["points_edit", "Ставить и править пункты выдачи", "Пункты и зоны"],
+    ["proof_view", "Смотреть фото и геометки завозов", "Курьер"],
+    ["cash_manage", "Наличные на пунктах: видеть, принимать сдачу, что требует внимания", "Деньги"],
+    ["cash_handover", "Сдать наличные с пункта", "Деньги"]
+  ];
+  var ALL_PERMS = PERMISSIONS.map(function (p) { return p[0]; });
+  // Стартовый набор (первые шесть) и типовые «по росту». sys = системная, удалить нельзя.
+  var POSITION_PRESETS = [
+    { id: "owner", name: "Владелец", sub: "Полный контроль системы", sys: true, perms: ALL_PERMS },
+    { id: "dispetcher", name: "Диспетчер", sub: "Заказы, оплата, зоны", perms: ["catalog_view", "orders_view", "orders_manage", "payment_confirm", "zones_edit", "metrics_view"] },
+    { id: "kurier", name: "Курьер", sub: "Очередь, доставка, сдача", perms: ["courier_work"] },
+    { id: "kladovshchik", name: "Кладовщик", sub: "Товары, остатки, метрики", perms: ["catalog_view", "stock_edit", "products_edit", "orders_view", "metrics_view"] },
+    { id: "buhgalter", name: "Бухгалтер", sub: "Деньги и отчёты", perms: ["cub_enter", "orders_view", "payment_confirm", "metrics_view", "finance_view", "finance_edit"] },
+    { id: "client", name: "Клиент", sub: "Каталог и мои заказы", sys: true, perms: ["catalog_view", "order_create"] },
+    { id: "admin", name: "Администратор", sub: "Заказы, зоны, настройки", perms: ["cub_enter", "catalog_view", "orders_view", "orders_manage", "payment_confirm", "zones_edit", "metrics_view", "people_view", "settings_edit"] },
+    { id: "sborshchik", name: "Сборщик", sub: "Сборка заказов", perms: ["catalog_view", "orders_view"] },
+    { id: "priemshchik", name: "Приёмщик", sub: "Приём товара на склад", perms: ["catalog_view", "stock_edit"] },
+    { id: "operator", name: "Оператор", sub: "Продажа и оплата на месте", perms: ["catalog_view", "orders_view", "payment_confirm", "quick_sale"] },
+    { id: "kontrolyor", name: "Контролёр", sub: "Только смотреть", perms: ["orders_view", "metrics_view", "dashboard_view", "finance_view"] },
+    { id: "partner_sklad", name: "Партнёр-склад", sub: "Склад партнёра", perms: ["catalog_view", "stock_edit"] },
+    { id: "podderzhka", name: "Поддержка", sub: "Помощь клиентам", perms: ["orders_view", "people_view"] },
+    { id: "kartograf", name: "Картограф", sub: "Ставит пункты выдачи на карте", perms: ["points_edit"] }
+  ];
+  var PRESET_MAP = {};
+  POSITION_PRESETS.forEach(function (p) { PRESET_MAP[p.id] = p; });
+  var LEGACY_TO_POSITION = { owner: "owner", admin: "admin", kladovshchik: "kladovshchik", prodavec: "operator", dostavshchik: "kurier", client: "client", buh: "buhgalter" };
+
+  // Демо пульта (?demo=1): вход без пароля и без сервера, данные только в памяти страницы
+  var CUB_DEMO = /[?&]demo=1/.test(location.search);
+
+  // Демо вкладки «Люди» (?demo=1): должности и люди в памяти страницы, сервер не вызывается.
+  // Хранилище и peopleApi_ нужны вкладке «Люди» (vkladka-lyudi.js).
+  var peopleDemo_ = null;
+  function peopleDemoInit_() {
+    if (peopleDemo_) return;
+    peopleDemo_ = {
+      positions: POSITION_PRESETS.slice(0, 6).map(function (p) { return { id: p.id, name: p.name, sub: p.sub, permissions: p.perms.slice(), system: !!p.sys }; }),
+      users: [
+        { telegramId: "000000000", name: "Егор", positions: ["owner"], active: true },
+        { telegramId: "100200300", name: "Иван", positions: ["kurier", "buhgalter"], active: true },
+        { telegramId: "200300400", name: "Анна", positions: ["client"], active: true }
+      ]
+    };
+  }
+  function peopleDemoCall_(action, d) {
+    peopleDemoInit_();
+    var S = peopleDemo_;
+    function fail(m) { return { success: false, error: m }; }
+    function pos(id) { return S.positions.filter(function (p) { return p.id === id; })[0]; }
+    if (action === "getUsers") return { success: true, users: JSON.parse(JSON.stringify(S.users)) };
+    if (action === "getPositions") return { success: true, positions: JSON.parse(JSON.stringify(S.positions)) };
+    if (action === "createOrUpdateUser") {
+      var u = S.users.filter(function (x) { return x.telegramId === String(d.telegramId); })[0];
+      if (u) { if (d.name != null) u.name = d.name; }
+      else S.users.push({ telegramId: String(d.telegramId), name: d.name || "", positions: ["client"], active: true });
+      return { success: true };
+    }
+    if (action === "setUserPositions") {
+      var uu = S.users.filter(function (x) { return x.telegramId === String(d.telegramId); })[0];
+      if (!uu) return fail("Человек не найден");
+      if (!d.positions || !d.positions.length) return fail("Нужна хотя бы одна должность");
+      var owners = S.users.filter(function (x) { return x.positions.indexOf("owner") !== -1; });
+      if (uu.positions.indexOf("owner") !== -1 && d.positions.indexOf("owner") === -1 && owners.length === 1) return fail("Нельзя снять последнего владельца");
+      uu.positions = d.positions.slice();
+      return { success: true };
+    }
+    if (action === "savePosition") {
+      if (!/^[a-z0-9_]{2,30}$/.test(d.id || "")) return fail("Неверный код должности");
+      if (!d.name) return fail("Укажите название");
+      var p = pos(d.id);
+      if (p && p.id === "owner") return fail("У владельца всегда все разрешения");
+      var perms = (d.permissions || []).filter(function (x) { return ALL_PERMS.indexOf(x) !== -1; });
+      if (p) { p.name = d.name; p.sub = d.sub || ""; p.permissions = perms; }
+      else S.positions.push({ id: d.id, name: d.name, sub: d.sub || "", permissions: perms, system: false });
+      return { success: true };
+    }
+    if (action === "deletePosition") {
+      var q = pos(d.id);
+      if (!q) return fail("Должность не найдена");
+      if (q.system) return fail("Системную должность удалить нельзя");
+      if (S.users.some(function (x) { return x.positions.indexOf(d.id) !== -1; })) return fail("Сначала снимите её с людей");
+      S.positions = S.positions.filter(function (x) { return x.id !== d.id; });
+      return { success: true };
+    }
+    return fail("demo");
+  }
+  function peopleApi_(action, payload) {
+    if (CUB_DEMO) return Promise.resolve(peopleDemoCall_(action, payload || {}));
+    return apiPost(action, payload);
+  }
+
+  function permsObj_(list) {
+    var o = {};
+    (list || []).forEach(function (p) { o[p] = true; });
+    return o;
+  }
+  // can для пульта: единственный способ вкладок узнать «можно ли». Решает сервер, это только меню.
+  function cubCan(perm) { return !!(state.perms && state.perms[perm]); }
+  function cubCanAny(list) { return list.some(cubCan); }
+
+  // Пока сервер не отдаёт список разрешений (старый ответ cubLogin с одним role): owner = все, buh = отчёты
+  function permsOfLegacyRole_(role) {
+    if (role === "buh") return ["cub_enter", "orders_view", "payment_confirm", "metrics_view", "finance_view", "finance_edit"];
+    return role === "owner" ? ALL_PERMS : [];
+  }
+  // Ближайшая старая роль для файлов, которые ещё сравнивают state.role с "owner" и "buh" (отдел 10)
+  function cubLegacyRole_(perms) {
+    return (perms.people_view || perms.settings_edit || perms.bot_manage || perms.zones_edit || perms.products_edit || perms.tasks_manage) ? "owner" : "buh";
+  }
+  function cubSetAccess_(res, id) {
+    var list = Array.isArray(res.permissions) ? res.permissions.filter(function (p) { return ALL_PERMS.indexOf(p) !== -1; }) : permsOfLegacyRole_(res.role);
+    state.perms = permsObj_(list);
+    state.role = cubLegacyRole_(state.perms);
+    state.cubId = id;
+    state.cubToken = (res && res.token) || "";
+    state.tab = state.perms.finance_view && state.role === "buh" ? "analytics" : (CUB_DEMO ? "people" : "status");
+    if (!CUB_DEMO) {
+      localStorage.setItem("cub_id", id);
+      localStorage.setItem("cub_role", state.role);
+      localStorage.setItem("cub_token", state.cubToken);
+      localStorage.setItem("cub_perms", JSON.stringify(list));
+    }
+  }
+  // Восстановление после перезагрузки: список разрешений из памяти (только для меню)
+  (function () {
+    var list = null;
+    try { list = JSON.parse(localStorage.getItem("cub_perms") || "null"); } catch (e) {}
+    state.perms = permsObj_(Array.isArray(list) ? list : permsOfLegacyRole_(state.role));
+  })();
+
+  // ---------------- rendering ----------------
+  var shell = document.getElementById("shell");
+
+  function render() {
+    if (!state.cubId) renderLogin();
+    else renderApp();
+  }
+
+  function renderLogin() {
+    // Открыт как мини-апп пульта внутри Telegram — сам подставляем номер
+    // владельца (Telegram его сообщает), остаётся ввести только пароль.
+    var tgId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? String(tg.initDataUnsafe.user.id) : "";
+    var prefillId = state.cubId || tgId || "";
+    shell.innerHTML =
+      '<div class="login">' +
+        '<div class="login-head">' +
+          '<span class="eyebrow">Центр управления бизнесом</span>' +
+          '<div class="mark">' + MARK + '</div>' +
+          '<h1>' + esc(t("pub_cub_name")) + '</h1>' +
+          '<p>' + esc(t("pub_cub_subtitle")) + '</p>' +
+        '</div>' +
+        '<div class="id-field">' +
+          '<label>Telegram ID' + (tgId ? ' · определён автоматически' : '') + '</label>' +
+          '<input id="cub-login-id" type="text" inputmode="numeric" placeholder="Ваш номер" autocomplete="off" value="' + esc(prefillId) + '"' + (tgId ? ' readonly' : '') + ' />' +
+          '<label style="margin-top:12px;">Пароль пульта</label>' +
+          '<input id="cub-login-pin" type="password" placeholder="Пароль" autocomplete="current-password" />' +
+          '<div class="hint" id="cub-login-hint">Доступ только для тех, кому владелец выдал вход в пульт.</div>' +
+        '</div>' +
+        '<button class="btn-primary" id="cub-login-btn">Войти</button>' +
+        // Вход без пароля только в демо (?demo=1), сервер не вызывается
+        (CUB_DEMO ? '<button class="btn-secondary" id="cub-demo-btn" style="margin-top:10px;">Демо-вход (без пароля)</button>' : '') +
+      '</div>' +
+      '<div class="toast" id="toast"></div>';
+
+    var input = document.getElementById("cub-login-id");
+    // В Telegram сразу ставим курсор в поле пароля — номер уже подставлен
+    if (tgId) { var pinPre = document.getElementById("cub-login-pin"); if (pinPre) setTimeout(function () { pinPre.focus(); }, 60); }
+    var btn = document.getElementById("cub-login-btn");
+    var hint = document.getElementById("cub-login-hint");
+
+    // Роль и пароль проверяет бэкенд (cubLogin): в браузере такой проверке верить
+    // нельзя — раньше пульт пускал по одному номеру, а номер владельца не секрет.
+    function doLogin() {
+      var id = input.value.trim();
+      var pinEl = document.getElementById("cub-login-pin");
+      var pin = pinEl ? pinEl.value : "";
+      if (!id) { toast("Укажите Telegram ID"); return; }
+      if (!pin) { toast("Введите пароль пульта"); return; }
+      btn.disabled = true;
+      btn.textContent = "Проверяем…";
+      apiPost("cubLogin", { telegramId: id, pin: pin })
+        .then(assertOk)
+        .then(function (res) {
+          var granted = res && (Array.isArray(res.permissions) ? res.permissions.indexOf("cub_enter") !== -1 : !!res.role);
+          if (!granted) {
+            btn.disabled = false;
+            btn.textContent = "Войти";
+            hint.textContent = "Доступа нет.";
+            toast("Доступа нет");
+            return;
+          }
+          cubSetAccess_(res, id);
+          render();
+        })
+        .catch(function (e) {
+          btn.disabled = false;
+          btn.textContent = "Войти";
+          toast(errMsg(e));
+        });
+    }
+
+    btn.addEventListener("click", doLogin);
+    input.addEventListener("keydown", function (ev) { if (ev.key === "Enter") doLogin(); });
+    var pinInput = document.getElementById("cub-login-pin");
+    if (pinInput) pinInput.addEventListener("keydown", function (ev) { if (ev.key === "Enter") doLogin(); });
+    var demoBtn = document.getElementById("cub-demo-btn");
+    if (demoBtn) demoBtn.addEventListener("click", function () {
+      cubSetAccess_({ role: "owner", token: "demo" }, "demo");
+      render();
+    });
+  }
+  function renderApp() {
+    // Вкладки по разрешениям человека; сервер всё равно проверяет каждый запрос
+    var tabs = TABS.filter(function (tb) { return cubCanAny(CUB_TAB_NEED[tb.id] || []); });
+    if (!tabs.length) { cubLogout_(); return; }
+    if (!tabs.some(function (tb) { return tb.id === state.tab; })) state.tab = tabs[0].id;
+    // Полные настройки (с ключами для вошедшего) подгружаем один раз после входа
+    if (!CUB_DEMO && !state.settingsFull) { state.settingsFull = true; loadSettings().then(function () { renderApp(); }); }
+    var roleLabel = (state.positionNames && state.positionNames.length) ? state.positionNames.join(" + ") : (state.role === "buh" ? "Бухгалтер" : state.role === "owner" ? "Владелец" : "Сотрудник");
+    shell.innerHTML =
+      '<div class="topbar">' +
+        '<div class="avatar">' + MARK + '</div>' +
+        '<div class="who"><div class="name">' + esc(t("pub_cub_name") || "ЦУБ") + '</div><div class="role">' + esc(roleLabel) + '</div></div>' +
+        '<button class="switch-btn" id="cub-logout">Выйти</button>' +
+      '</div>' +
+      '<main id="main"></main>' +
+      '<nav class="tabbar">' +
+        tabs.map(function (t) {
+          return '<button data-tab="' + t.id + '" class="' + (t.id === state.tab ? "active" : "") + '"><span>' + t.label + '</span></button>';
+        }).join("") +
+      '</nav>' +
+      '<div class="toast" id="toast"></div>';
+
+    document.getElementById("cub-logout").addEventListener("click", function () {
+      localStorage.removeItem("cub_id");
+      localStorage.removeItem("cub_role");
+      localStorage.removeItem("cub_token");
+      localStorage.removeItem("cub_perms");
+      state.settingsFull = false;
+      state.cubId = "";
+      state.cubToken = "";
+      state.role = "owner";
+      state.tab = "status";
+      render();
+    });
+    shell.querySelectorAll("[data-tab]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.tab = btn.getAttribute("data-tab");
+        renderApp();
+      });
+    });
+
+    renderTab();
+  }
+
+  function renderTab() {
+    var main = document.getElementById("main");
+    if (!main) return;
+    main.innerHTML = loadingHTML();
+    if (state.tab === "status") return renderStatus(main);
+    if (state.tab === "analytics") return renderAnalytics(main);
+    if (state.tab === "texts") return renderTexts(main);
+    if (state.tab === "products") return renderProducts(main);
+    if (state.tab === "people") return renderPeople(main);
+    if (state.tab === "zones") return renderZones(main);
+    if (state.tab === "points") return renderPunktyCub(main);
+    if (state.tab === "money") return renderMoney(main);
+    if (state.tab === "zavozy") return renderZavozyCub(main);
+    if (state.tab === "claude") return renderClaude(main);
+  }
+
+  // ---------------- Статус ----------------
+  function renderStatus(main) {
+    Promise.all([
+      apiPost("getTexts").then(assertOk),
+      apiPost("getMetrics", {}).then(assertOk).catch(function (e) { return { __err: errMsg(e) }; })
+    ]).then(function (rs) {
+      if (state.tab !== "status") return;
+      state.texts = (rs[0] && rs[0].texts) || {};
+      var m = rs[1] && rs[1].metrics ? rs[1].metrics : null;
+      var mErr = rs[1] && rs[1].__err;
+      var locked = String(state.texts.site_locked || "") === "1";
+      var courierOn = String(state.texts.courier_enabled || "1") !== "0";
+
+      main.innerHTML =
+        '<div class="screen-title-row"><div class="screen-title">Статус</div>' +
+        '<div class="screen-sub">Состояние приложения и ключевые показатели</div></div>' +
+
+        '<div class="card">' +
+          '<span class="eyebrow">Состояние приложения</span>' +
+          '<div class="state-row">' +
+            '<span class="state-line">' + (locked ? "Приложение закрыто" : "Приложение открыто") + '</span>' +
+            (locked
+              ? '<span class="pill cancelled"><span class="dot"></span>Закрыт</span>'
+              : '<span class="pill delivered"><span class="dot"></span>Открыт</span>') +
+          '</div>' +
+          (locked
+            ? fieldHTML("Текст заглушки (lock_message)",
+                '<input id="lock-message" value="' + esc(state.texts.lock_message || "") + '" placeholder="Приложение временно закрыто" />') +
+              '<button class="btn-primary" id="lock-toggle" style="background:var(--ok);border-color:var(--ok);">Открыть приложение</button>'
+            : '<button class="btn-primary" id="lock-toggle" style="background:var(--danger);border-color:var(--danger);">Закрыть приложение</button>') +
+          '<div class="state-row" style="margin-top:12px;">' +
+            '<span class="state-line">Курьерская доставка</span>' +
+            (courierOn
+              ? '<button class="act-btn" id="courier-toggle" style="color:var(--ok);">Включена — выключить</button>' +
+                ''
+              : '<button class="act-btn" id="courier-toggle" style="color:var(--danger);">Выключена — включить</button>') +
+          '</div>' +
+          '<p class="hint-note">Выключишь — у клиентов останется только самовывоз, кнопка «Курьер» погаснет. Обратно — в один клик.</p>' +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Метрики</span>' +
+          (m
+            ? '<div class="stat-grid" style="margin-top:12px;">' +
+                '<div class="stat-card"><div class="val">' + esc(m.totalOrders != null ? m.totalOrders : "—") + '</div><div class="lbl">Заказы</div></div>' +
+                '<div class="stat-card"><div class="val">' + esc(m.completedOrders != null ? m.completedOrders : "—") + '</div><div class="lbl">Выполнено</div></div>' +
+                '<div class="stat-card"><div class="val">' + (m.totalRevenue != null ? money(m.totalRevenue) : "—") + '</div><div class="lbl">Выручка</div></div>' +
+                '<div class="stat-card"><div class="val">' + esc(m.conversionRate != null ? m.conversionRate : "—") + '</div><div class="lbl">Конверсия</div></div>' +
+              '</div>'
+            : '<p class="hint-note">Метрики недоступны: ' + esc(mErr || "нет данных") + '</p>') +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Telegram-бот</span>' +
+          '<div id="bot-block"><p class="hint-note">Проверяем ботов…</p></div>' +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Оплата</span>' +
+          '<p class="hint-note">Способы оплаты (наличные, QR, криптовалюта) и их реквизиты отмечаются галочками во вкладке «Деньги»; поля криптовалюты появляются там под её галочкой.</p>' +
+          '<div class="grid-2">' +
+            fieldHTML("Курс: 1 " + currencySym() + " в рублях (например 0,0033)",
+              '<input id="rate-rub" inputmode="decimal" value="' + esc(state.texts.rate_vnd_to_rub || "") + '" placeholder="0,0033" />') +
+            fieldHTML("Курс: 1 " + currencySym() + " в тенге (например 0,021)",
+              '<input id="rate-kzt" inputmode="decimal" value="' + esc(state.texts.rate_vnd_to_kzt || "") + '" placeholder="0,021" />') +
+          '</div>' +
+          '<p class="hint-note">Курсы — только для подсказки клиенту «сколько это в ₽/₸». Оплата всегда в ' + esc(currencySym()) + ': наличными или по QR. Реквизиты вставляй сам, сохраняются сразу.</p>' +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Ссылки</span>' +
+          '<div class="link-list">' +
+            '<a class="act-btn" href="index.html">Приложение</a>' +
+            (/^https:\/\//.test(String(state.texts.sheet_url || ""))
+              ? '<a class="act-btn" href="' + esc(state.texts.sheet_url) + '" target="_blank" rel="noopener">Google Таблица</a>' : '') +
+          '</div>' +
+        '</div>';
+
+      if (mErr) toast(mErr);
+
+      var toggle = document.getElementById("lock-toggle");
+      toggle.addEventListener("click", function () {
+        toggle.disabled = true;
+        apiPost("setText", { key: "site_locked", value: locked ? "0" : "1" })
+          .then(assertOk)
+          .then(function () {
+            toast(locked ? "Приложение открыто" : "Приложение закрыто");
+            renderTab();
+          })
+          .catch(function (e) { toast(errMsg(e)); toggle.disabled = false; });
+      });
+
+      var lockMsg = document.getElementById("lock-message");
+      if (lockMsg) {
+        lockMsg.addEventListener("change", function () {
+          apiPost("setText", { key: "lock_message", value: lockMsg.value })
+            .then(assertOk)
+            .then(function () { toast("Текст заглушки сохранён"); })
+            .catch(function (e) { toast(errMsg(e)); });
+        });
+      }
+
+      var courierToggle = document.getElementById("courier-toggle");
+      courierToggle.addEventListener("click", function () {
+        var newVal = courierOn ? "0" : "1";
+        courierToggle.disabled = true;
+        apiPost("setText", { key: "courier_enabled", value: newVal })
+          .then(assertOk)
+          .then(function () { toast(newVal === "1" ? "Курьерская доставка включена" : "Курьерская доставка выключена"); renderTab(); })
+          .catch(function (e) { toast(errMsg(e)); courierToggle.disabled = false; });
+      });
+
+      [["rate-rub", "rate_vnd_to_rub"], ["rate-kzt", "rate_vnd_to_kzt"]].forEach(function (p) {
+        var el = document.getElementById(p[0]);
+        if (!el) return;
+        el.addEventListener("change", function () {
+          apiPost("setText", { key: p[1], value: el.value })
+            .then(assertOk)
+            .then(function () { toast("Сохранено"); state.texts[p[1]] = el.value; })
+            .catch(function (e) { toast(errMsg(e)); });
+        });
+      });
+
+      renderBotBlock();
+    }).catch(function (e) {
+      if (state.tab !== "status") return;
+      main.innerHTML = errorHTML(errMsg(e));
+      toast(errMsg(e));
+    });
+  }
+
+  // Блок «Telegram-бот»: состояние основного и запасного, ручное переключение.
+  // Сторож в бэкенде проверяет основного каждые 30 минут и при блокировке
+  // переключает сам; кнопка — на случай, когда нужно не ждать.
+  function renderBotBlock() {
+    var box = document.getElementById("bot-block");
+    if (!box) return;
+    function pill(stateName) {
+      if (stateName === "alive") return '<span class="pill delivered"><span class="dot"></span>Работает</span>';
+      if (stateName === "blocked") return '<span class="pill cancelled"><span class="dot"></span>Заблокирован</span>';
+      return '<span class="pill"><span class="dot"></span>Не настроен</span>';
+    }
+    apiPost("getBotStatus", {}).then(assertOk).then(function (st) {
+      if (!document.getElementById("bot-block")) return;
+      var reserves = st.reserves || [];
+      var anyAlive = reserves.some(function (r) { return r.state === "alive"; });
+      box.innerHTML =
+        '<div class="state-row"><span class="state-line">Основной' + (st.mainName ? " · @" + esc(st.mainName) : "") + '</span>' + pill(st.main) + '</div>' +
+        reserves.map(function (r, i) {
+          return '<div class="state-row"><span class="state-line">Запасной ' + (i + 1) + (r.name ? " · @" + esc(r.name) : "") + '</span>' + pill(r.state) + '</div>';
+        }).join("") +
+        (anyAlive
+          ? '<button class="btn-primary" id="bot-switch" style="background:var(--danger);border-color:var(--danger);">Активировать запасного бота</button>' +
+            '<p class="hint-note">Первый живой запасной станет основным, кнопка «Открыть приложение» переедет к нему, остальные подвинутся в очереди. Сторож делает то же сам каждые 30 минут при блокировке.</p>'
+          : '<p class="hint-note">Живых запасных нет. Создайте ботов в BotFather и вставьте ключи в строки bot_token_2, bot_token_3, bot_token_4 листа «Тексты» — номер строки соответствует номеру бота.</p>');
+      var btn = document.getElementById("bot-switch");
+      if (btn) btn.addEventListener("click", function () {
+        if (!confirm("Переключить приложение на запасного бота? Основной перестанет использоваться.")) return;
+        btn.disabled = true;
+        apiPost("switchToReserveBot", {})
+          .then(assertOk)
+          .then(function (r) { toast("Приложение переключено на @" + (r.username || "нового бота")); renderBotBlock(); })
+          .catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+      });
+    }).catch(function (e) {
+      box.innerHTML = '<p class="hint-note">Не удалось проверить ботов: ' + esc(errMsg(e)) + '</p>';
+    });
+  }
+
+  // ---------------- Аналитика ----------------
+  var EXPENSE_CATS = ["Закупка камней", "Реклама", "Аренда", "Зарплата", "Прочее"];
+
+  function pnlRow(label, value, opts) {
+    opts = opts || {};
+    return '<div class="pnl-row' + (opts.total ? " total" : "") + '">' +
+      '<span class="lbl">' + label + '</span>' +
+      '<span class="num' + (opts.danger ? " danger" : "") + '">' + value + '</span>' +
+    '</div>';
+  }
+
+  function renderAnalytics(main) {
+    var monthKey = state.anMonth || monthKeyNow_();
+    apiPost("getAnalytics", { month: monthKey }).then(assertOk).then(function (res) {
+      if (state.tab !== "analytics") return;
+      var a = (res && res.analytics) || {};
+      var p = a.panel || {};
+      var pnl = a.pnl || {};
+      var dds = Array.isArray(a.dds) ? a.dds : [];
+      var units = Array.isArray(a.units) ? a.units : [];
+      var cats = Array.isArray(a.expensesByCat) ? a.expensesByCat : [];
+      var maxIn = dds.reduce(function (mx, d) { return Math.max(mx, Number(d.inflow) || 0); }, 0);
+      var debt = Number(p.debtTotal) || 0;
+      var net = Number(pnl.netProfit) || 0;
+
+      main.innerHTML =
+        '<div class="screen-title-row"><div class="screen-title">Аналитика</div>' +
+        '<div class="screen-sub">Финансы магазина за месяц</div></div>' +
+
+        '<div class="card" style="margin-bottom:16px;">' +
+          '<div class="grid-2">' +
+            fieldHTML("Месяц отчёта", '<select id="an-month">' + monthOptionsHTML_(monthKey) + '</select>') +
+            '<div class="field"><label>Отчёт файлом</label><button class="act-btn" id="an-csv" style="width:100%;">Скачать CSV</button></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="stat-grid">' +
+          '<div class="stat-card"><div class="val">' + money(p.revenueMonth) + '</div><div class="lbl">Выручка за месяц</div></div>' +
+          '<div class="stat-card"><div class="val">' + esc(p.ordersMonth != null ? p.ordersMonth : 0) + '</div><div class="lbl">Заказы</div></div>' +
+          '<div class="stat-card"><div class="val">' + money(p.avgCheck) + '</div><div class="lbl">Средний чек</div></div>' +
+          '<div class="stat-card"><div class="val"' + (debt > 0 ? ' style="color:var(--danger);"' : '') + '>' + money(debt) + '</div><div class="lbl">Должники</div></div>' +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">P&amp;L за месяц</span>' +
+          '<div style="margin-top:8px;">' +
+            pnlRow("Выручка", money(pnl.revenue)) +
+            pnlRow("− Себестоимость", money(pnl.cogs)) +
+            pnlRow("= Валовая прибыль", money(pnl.grossProfit), { total: true }) +
+            pnlRow("− Расходы", money(pnl.expenses)) +
+            pnlRow("− Курьерские", money(pnl.courierFees)) +
+            pnlRow("= Чистая прибыль", money(net), { total: true, danger: net < 0 }) +
+            pnlRow("Маржа", (Number(pnl.marginPct) || 0).toLocaleString("ru-RU") + " %") +
+          '</div>' +
+          '<p class="hint-note">Себестоимость берётся из колонки Себестоимость_за_грамм листа Товары — заполните её для точного расчёта.</p>' +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">ДДС · поступления за месяц</span>' +
+          (dds.length
+            ? '<div class="bars">' +
+                dds.map(function (d) {
+                  var v = Number(d.inflow) || 0;
+                  var pct = maxIn > 0 ? Math.round(v / maxIn * 100) : 0;
+                  return '<div class="bar-row"><span class="lbl">' + esc(d.day) + '</span>' +
+                    '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
+                    '<span class="num">' + money(v) + '</span></div>';
+                }).join("") +
+              '</div>'
+            : '<div class="empty-state" style="margin-top:12px;"><span class="eyebrow">Пусто</span><p>Поступлений за месяц нет</p></div>') +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Юнит-экономика</span>' +
+          (units.length
+            ? '<div style="margin-top:4px;">' +
+                units.map(function (u) {
+                  var mpg = Number(u.marginPerGram) || 0;
+                  return '<div class="unit-row">' +
+                    '<div style="min-width:0;"><div class="n">' + esc(u.name) + '</div>' +
+                    '<div class="s">' + (Number(u.grams) || 0).toLocaleString("ru-RU") + ' г · ' + money(u.revenue) + '</div></div>' +
+                    '<div class="m' + (mpg === 0 ? " danger" : "") + '">' + money(mpg) + '/г' +
+                      (mpg === 0 ? '<span class="sub">нет себестоимости</span>' : '') +
+                    '</div>' +
+                  '</div>';
+                }).join("") +
+              '</div>'
+            : '<div class="empty-state" style="margin-top:12px;"><span class="eyebrow">Пусто</span><p>Продаж за месяц нет</p></div>') +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Расходы за месяц</span>' +
+          (cats.length
+            ? '<div style="margin-top:4px;">' +
+                cats.map(function (c) {
+                  return '<div class="pnl-row"><span class="lbl">' + esc(c.cat) + '</span>' +
+                    '<span class="num">' + money(c.amount) + '</span></div>';
+                }).join("") +
+              '</div>'
+            : '<p class="hint-note">Расходов в этом месяце нет</p>') +
+          '<div style="margin-top:16px;">' +
+            fieldHTML("Категория", '<select id="exp-cat">' +
+              EXPENSE_CATS.map(function (c) { return '<option value="' + c + '">' + c + '</option>'; }).join("") +
+            '</select>') +
+            fieldHTML("Сумма, ₫", '<input id="exp-amount" type="number" step="any" inputmode="decimal" />') +
+            fieldHTML("Комментарий", '<input id="exp-note" placeholder="Необязательно" />') +
+            '<button class="btn-primary" id="exp-add">Добавить расход</button>' +
+          '</div>' +
+        '</div>';
+
+      document.getElementById("an-month").addEventListener("change", function () {
+        state.anMonth = this.value;
+        renderTab();
+      });
+      document.getElementById("an-csv").addEventListener("click", function () {
+        var rows = [
+          ["Отчёт ЦУБ за месяц", monthKey],
+          [],
+          ["Показатель", "Значение"],
+          ["Выручка", Number(p.revenueMonth) || 0],
+          ["Заказы", Number(p.ordersMonth) || 0],
+          ["Средний чек", Number(p.avgCheck) || 0],
+          ["Должники (всего, на сегодня)", debt],
+          [],
+          ["P&L", ""],
+          ["Выручка", Number(pnl.revenue) || 0],
+          ["Себестоимость", Number(pnl.cogs) || 0],
+          ["Валовая прибыль", Number(pnl.grossProfit) || 0],
+          ["Расходы", Number(pnl.expenses) || 0],
+          ["Курьерские", Number(pnl.courierFees) || 0],
+          ["Чистая прибыль", net],
+          ["Маржа, %", Number(pnl.marginPct) || 0],
+          [],
+          ["Поступления по дням", ""]
+        ];
+        dds.forEach(function (x) { rows.push([x.day, Number(x.inflow) || 0]); });
+        rows.push([]);
+        rows.push(["Юнит-экономика", "Граммы", "Выручка", "Маржа с грамма"]);
+        units.forEach(function (u) { rows.push([u.name, Number(u.grams) || 0, Number(u.revenue) || 0, Number(u.marginPerGram) || 0]); });
+        rows.push([]);
+        rows.push(["Расходы по категориям", ""]);
+        cats.forEach(function (c) { rows.push([c.cat, Number(c.amount) || 0]); });
+        downloadCsv_(rows, "otchet_" + monthKey + ".csv");
+        toast("Файл готов: окно «Поделиться» или загрузки браузера. Внутри Telegram скачивание не работает — откройте ЦУБ в Safari/Chrome");
+      });
+      document.getElementById("exp-add").addEventListener("click", function () {
+        var amount = num(document.getElementById("exp-amount").value);
+        if (amount <= 0) { toast("Укажите сумму"); return; }
+        var btn = document.getElementById("exp-add");
+        btn.disabled = true;
+        apiPost("addExpense", {
+          category: document.getElementById("exp-cat").value,
+          amount: amount,
+          note: document.getElementById("exp-note").value.trim()
+        })
+          .then(assertOk)
+          .then(function () { toast("Расход добавлен"); renderTab(); })
+          .catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+      });
+    }).catch(function (e) {
+      if (state.tab !== "analytics") return;
+      main.innerHTML = errorHTML(errMsg(e));
+      toast(errMsg(e));
+    });
+  }
+
+  // Деньги (отдел 09, волна Б): способы оплаты галочками, касса пункта, «что требует внимания».
+  // Общий блок витрины и пульта: данные, связь с сервером и демо без сервера (?demo=1, хранилище браузера).
+  // Контракт: dogovor/09-kassa.md. Сервер: server/09-kassa.gs. Проверка: proverki/09-kassa.js.
+  var KASSA_DEMO = /[?&]demo=1/.test(location.search);
+  var KASSA_DEMO_KEY = "kurier_demo_kassa";
+  var PAYM_DEMO_KEY = "kurier_demo_pay_methods";
+  var PAYM_FIELDS_DEMO_KEY = "kurier_demo_pay_fields";
+
+  // Способы оплаты: код, подпись, поля реквизитов (ключ листа «Тексты», подпись). Двойник списка на сервере (PAY_CATALOG_).
+  var PAY_CATALOG = [
+    { code: "cash", label: "Наличные при получении", fields: [] },
+    { code: "qr_vn", label: "QR Вьетнам", fields: [["pay_bank_details", "Реквизиты банка (как есть, в несколько строк)"], ["pay_qr_image", "Ссылка на картинку QR-кода"]] },
+    { code: "qr_kz", label: "QR Казахстан", fields: [["pay_qr_kz_details", "Реквизиты банка (как есть, в несколько строк)"], ["pay_qr_kz_image", "Ссылка на картинку QR-кода"]] },
+    { code: "qr_ru", label: "QR Россия", fields: [["pay_qr_ru_details", "Реквизиты банка (как есть, в несколько строк)"], ["pay_qr_ru_image", "Ссылка на картинку QR-кода"]] },
+    { code: "crypto", label: "Криптовалюта", fields: [["pay_usdt_address", "Адрес кошелька"], ["pay_usdt_network", "Сеть (например TRC20)"], ["rate_vnd_to_usdt", "Курс: сколько USDT в одной основной единице"]] }
+  ];
+  var PAY_LEGACY = { qr: "qr_vn", usdt: "crypto" };
+
+  function kassaStoreGet_(key, def) {
+    try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; }
+  }
+  function kassaStoreSet_(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+
+  // Те же правила, что на сервере (payMethodsCheck_): пусто нельзя, одну криптовалюту нельзя
+  function payMethodsCheck(list) {
+    if (!list || !list.length) return "Отметьте хотя бы один способ оплаты";
+    if (list.length === 1 && list[0] === "crypto") return "Криптовалюта не может быть единственным способом оплаты: оставьте ещё наличные или QR";
+    return "";
+  }
+  function payMethodLabel(code) {
+    code = PAY_LEGACY[code] || code;
+    for (var i = 0; i < PAY_CATALOG.length; i++) if (PAY_CATALOG[i].code === code) return PAY_CATALOG[i].label;
+    return code || "";
+  }
+  // Включённые способы в демо: по умолчанию только наличные; сломанный набор читается как «только наличные»
+  function payMethodsDemoRead() {
+    var list = kassaStoreGet_(PAYM_DEMO_KEY, ["cash"]);
+    if (!Array.isArray(list)) list = ["cash"];
+    list = PAY_CATALOG.map(function (m) { return m.code; }).filter(function (c) { return list.indexOf(c) !== -1; });
+    return payMethodsCheck(list) ? ["cash"] : list;
+  }
+  function payFieldsDemoRead() { return kassaStoreGet_(PAYM_FIELDS_DEMO_KEY, {}); }
+
+  // Пульт: все способы с галочкой и реквизитами. Promise<{methods, catalog:[{code,label,enabled,fields:[{key,label,value}]}]}>
+  function payMethodsLoad() {
+    if (KASSA_DEMO) {
+      var on = payMethodsDemoRead(), vals = payFieldsDemoRead();
+      return Promise.resolve({
+        methods: on,
+        catalog: PAY_CATALOG.map(function (m) {
+          return { code: m.code, label: m.label, enabled: on.indexOf(m.code) !== -1, fields: m.fields.map(function (f) { return { key: f[0], label: f[1], value: vals[f[0]] || "" }; }) };
+        })
+      });
+    }
+    return apiPost("getPayMethods", {}).then(assertOk);
+  }
+  function payMethodsSave(list) {
+    var err = payMethodsCheck(list);
+    if (err) return Promise.reject(new Error(err));
+    if (KASSA_DEMO) { kassaStoreSet_(PAYM_DEMO_KEY, list); return Promise.resolve({ success: true, methods: list }); }
+    return apiPost("setPayMethods", { methods: list }).then(assertOk);
+  }
+  // Реквизит способа (поле под галочкой): в демо в браузере, иначе обычная настройка setText
+  function payFieldSave(key, value) {
+    if (KASSA_DEMO) { var v = payFieldsDemoRead(); v[key] = value; kassaStoreSet_(PAYM_FIELDS_DEMO_KEY, v); return Promise.resolve(); }
+    return apiPost("setText", { key: key, value: value }).then(assertOk);
+  }
+  // Ответ getPaymentInfo в демо: включённые способы и их реквизиты (клиент видит только отмеченные)
+  function payInfoDemo() {
+    var on = payMethodsDemoRead(), vals = payFieldsDemoRead(), details = {}, labels = {};
+    PAY_CATALOG.forEach(function (m) {
+      labels[m.code] = m.label;
+      if (m.code !== "cash" && on.indexOf(m.code) !== -1) {
+        details[m.code] = { label: m.label, fields: m.fields.map(function (f) { return { key: f[0], label: f[1], value: vals[f[0]] || "" }; }) };
+      }
+    });
+    return { success: true, methods: on, labels: labels, details: details, qrEnabled: on.indexOf("qr_vn") !== -1, bankDetails: vals.pay_bank_details || "", qrImage: vals.pay_qr_image || "", usdtAddress: vals.pay_usdt_address || "", usdtNetwork: vals.pay_usdt_network || "", rates: {} };
+  }
+
+  // ---------------- Касса пункта ----------------
+  // Журнал: prihod (выдача за наличные, status provedeno), sdacha (ozhidaet -> prinyato | otkloneno).
+  // Наличных на пункте = приходы минус принятые сдачи. Ожидающая сдача кассу не меняет.
+  function kassaSums(rows) {
+    var m = {};
+    rows.forEach(function (r) {
+      var s = m[r.punkt_id] || (m[r.punkt_id] = { prihod: 0, sdano: 0, ozhidaet: 0, saldo: 0 });
+      if (r.tip === "prihod" && r.status === "provedeno") s.prihod += r.summa;
+      if (r.tip === "sdacha" && r.status === "prinyato") s.sdano += r.summa;
+      if (r.tip === "sdacha" && r.status === "ozhidaet") s.ozhidaet += r.summa;
+    });
+    Object.keys(m).forEach(function (k) { m[k].saldo = Math.round((m[k].prihod - m[k].sdano) * 100) / 100; });
+    return m;
+  }
+  function kassaDemoRows() {
+    var rows = kassaStoreGet_(KASSA_DEMO_KEY, null);
+    if (!Array.isArray(rows)) {
+      // начальный набор: заказ D-3002 уже выдан за наличные на втором пункте
+      rows = [{ id: "KDEMO1", data: new Date(Date.now() - 26 * 3600000).toISOString(), punkt_id: "P-DEMO-2", tip: "prihod", summa: 300000, order_id: "D-3002", kto: "demo", status: "provedeno", podtverdil: "", podtverzhdeno: "" }];
+      kassaStoreSet_(KASSA_DEMO_KEY, rows);
+    }
+    return rows;
+  }
+  // Демо: выдача заказа за наличные кладёт сумму на пункт (зовёт issueOrder отдела 05). Повтор по тому же заказу ничего не добавляет.
+  function kassaDemoVnesti(punktId, orderId, summa) {
+    var rows = kassaDemoRows();
+    if (!(Number(summa) > 0) || !punktId) return;
+    if (rows.some(function (r) { return r.tip === "prihod" && r.order_id === String(orderId); })) return;
+    rows.push({ id: "K" + Date.now().toString(36).toUpperCase(), data: new Date().toISOString(), punkt_id: String(punktId), tip: "prihod", summa: Number(summa), order_id: String(orderId), kto: String(state.telegramId || "demo"), status: "provedeno", podtverdil: "", podtverzhdeno: "" });
+    kassaStoreSet_(KASSA_DEMO_KEY, rows);
+  }
+  function kassaPunktNames_() {
+    return (typeof loadPunkty === "function" ? loadPunkty() : Promise.resolve([])).then(function (list) {
+      var names = {}, ids = [];
+      (list || []).forEach(function (p) { names[String(p.id)] = p.nazvanie || p.id; ids.push(String(p.id)); });
+      return { names: names, ids: ids };
+    }).catch(function () { return { names: {}, ids: [] }; });
+  }
+  function kassaViewRow_(r, names) {
+    return { id: r.id, data: r.data, punktId: r.punkt_id, punktNazvanie: names[r.punkt_id] || r.punkt_id, tip: r.tip, summa: r.summa, orderId: r.order_id, kto: r.kto, ktoImya: r.kto, status: r.status, podtverdil: r.podtverdil, podtverdilImya: r.podtverdil, podtverzhdeno: r.podtverzhdeno };
+  }
+  // Promise<{punkty:[{punktId, punktNazvanie, saldo, ozhidaet, mozhnoSdat}], total, waiting:[], history:[]}>
+  function kassaLoad() {
+    if (!KASSA_DEMO) return apiPost("getKassa", {}).then(assertOk);
+    return kassaPunktNames_().then(function (pn) {
+      var rows = kassaDemoRows(), sums = kassaSums(rows), ids = pn.ids.slice();
+      Object.keys(sums).forEach(function (k) { if (ids.indexOf(k) === -1) ids.push(k); });
+      var list = ids.map(function (id) {
+        var s = sums[id] || { prihod: 0, sdano: 0, ozhidaet: 0, saldo: 0 };
+        return { punktId: id, punktNazvanie: pn.names[id] || id, saldo: s.saldo, ozhidaet: s.ozhidaet, prihod: s.prihod, sdano: s.sdano, mozhnoSdat: Math.round((s.saldo - s.ozhidaet) * 100) / 100 };
+      }).sort(function (a, b) { return b.saldo - a.saldo; });
+      return {
+        success: true, punkty: list,
+        total: Math.round(list.reduce(function (n, p) { return n + p.saldo; }, 0) * 100) / 100,
+        waiting: rows.filter(function (r) { return r.tip === "sdacha" && r.status === "ozhidaet"; }).map(function (r) { return kassaViewRow_(r, pn.names); }),
+        history: rows.slice(-40).reverse().map(function (r) { return kassaViewRow_(r, pn.names); })
+      };
+    });
+  }
+  // «Сдал»: хозяин пункта или курьер
+  function kassaSdat(punktId, summa) {
+    summa = Math.round((Number(summa) || 0) * 100) / 100;
+    if (!KASSA_DEMO) return apiPost("sdatNalichnye", { punktId: punktId, summa: summa }).then(assertOk);
+    if (!(summa > 0)) return Promise.reject(new Error("Сумма сдачи: число больше нуля"));
+    var rows = kassaDemoRows(), s = kassaSums(rows)[punktId] || { saldo: 0, ozhidaet: 0 };
+    var free = Math.round((s.saldo - s.ozhidaet) * 100) / 100;
+    if (summa > free) return Promise.reject(new Error(free > 0 ? "На пункте можно сдать не больше " + free : "На пункте нет наличных к сдаче"));
+    rows.push({ id: "K" + Date.now().toString(36).toUpperCase(), data: new Date().toISOString(), punkt_id: punktId, tip: "sdacha", summa: summa, order_id: "", kto: String(state.telegramId || "demo"), status: "ozhidaet", podtverdil: "", podtverzhdeno: "" });
+    kassaStoreSet_(KASSA_DEMO_KEY, rows);
+    return Promise.resolve({ success: true, summa: summa });
+  }
+  // «Принял» (владелец): только теперь сумма списывается с пункта
+  function kassaPrinyat(id) {
+    if (!KASSA_DEMO) return apiPost("prinyatNalichnye", { id: id }).then(assertOk);
+    var rows = kassaDemoRows(), r = rows.filter(function (x) { return x.id === id && x.tip === "sdacha"; })[0];
+    if (!r) return Promise.reject(new Error("Сдача не найдена"));
+    if (r.status !== "ozhidaet") return Promise.reject(new Error("Сдача уже закрыта"));
+    var s = kassaSums(rows)[r.punkt_id] || { saldo: 0 };
+    if (r.summa > s.saldo) return Promise.reject(new Error("На пункте меньше наличных, чем в сдаче: отклоните её и сдайте заново"));
+    r.status = "prinyato"; r.podtverdil = String(state.telegramId || "demo"); r.podtverzhdeno = new Date().toISOString();
+    kassaStoreSet_(KASSA_DEMO_KEY, rows);
+    return Promise.resolve({ success: true });
+  }
+  // «Не сошлось» (владелец): сдача закрыта, касса не меняется
+  function kassaOtklonit(id) {
+    if (!KASSA_DEMO) return apiPost("otklonitSdachu", { id: id }).then(assertOk);
+    var rows = kassaDemoRows(), r = rows.filter(function (x) { return x.id === id && x.tip === "sdacha"; })[0];
+    if (!r) return Promise.reject(new Error("Сдача не найдена"));
+    if (r.status !== "ozhidaet") return Promise.reject(new Error("Сдача уже закрыта"));
+    r.status = "otkloneno"; r.podtverdil = String(state.telegramId || "demo"); r.podtverzhdeno = new Date().toISOString();
+    kassaStoreSet_(KASSA_DEMO_KEY, rows);
+    return Promise.resolve({ success: true });
+  }
+
+  // ---------------- «Что требует внимания» ----------------
+  // Сырые данные: {pustye:[{punktId,punktNazvanie}], prosrochennye:[{orderId,punktId,punktNazvanie,bronDo}], istekshie:n,
+  //                kassa:[{punktId,punktNazvanie,saldo,ozhidaet}], sdachi:[ожидающие сдачи]}
+  function attentionLoad() {
+    if (!KASSA_DEMO) return apiPost("getAttention", {}).then(assertOk);
+    return Promise.all([
+      kassaPunktNames_(),
+      typeof ostatkiPunkty === "function" ? ostatkiPunkty() : Promise.resolve([]),
+      kassaLoad(),
+      typeof pickupDemoOrders === "function" ? Promise.resolve(pickupDemoOrders()) : Promise.resolve([])
+    ]).then(function (r) {
+      var punkty = r[1] || [];
+      return (typeof ostatkiLoad === "function" ? ostatkiLoad(punkty) : Promise.resolve([])).then(function (rows) {
+        var dost = {};
+        (rows || []).forEach(function (o) { dost[o.punkt_id] = (dost[o.punkt_id] || 0) + Math.max(0, Number(o.dostupno != null ? o.dostupno : o.kolichestvo - o.bron) || 0); });
+        var out = { success: true, pustye: [], prosrochennye: [], istekshie: 0, kassa: [], sdachi: r[2].waiting };
+        punkty.forEach(function (p) { if (!(dost[String(p.id)] > 0)) out.pustye.push({ punktId: String(p.id), punktNazvanie: p.nazvanie || p.id }); });
+        var now = Date.now();
+        r[3].forEach(function (o) {
+          if (o.status === "bron_istekla") out.istekshie++;
+          if (o.status === "zabronirovan" && Date.parse(o.bronDo) <= now) out.prosrochennye.push({ orderId: o.orderId, punktId: o.punktId, punktNazvanie: r[0].names[o.punktId] || o.punktNazvanie, bronDo: o.bronDo });
+        });
+        out.kassa = r[2].punkty.filter(function (p) { return p.saldo > 0; }).map(function (p) { return { punktId: p.punktId, punktNazvanie: p.punktNazvanie, saldo: p.saldo, ozhidaet: p.ozhidaet }; });
+        return out;
+      });
+    });
+  }
+  // Сырые данные -> строки экрана [{kind: "warn" | "info", text}] (общая для демо и боя)
+  function attentionItems(a) {
+    var out = [];
+    (a.pustye || []).forEach(function (p) { out.push({ kind: "warn", text: "На пункте «" + p.punktNazvanie + "» нет товара" }); });
+    (a.prosrochennye || []).forEach(function (o) { out.push({ kind: "warn", text: "Бронь " + o.orderId + " просрочена (пункт «" + o.punktNazvanie + "»), товар ещё не вернулся на полку" }); });
+    if (Number(a.istekshie) > 0) out.push({ kind: "info", text: "Броней закрыто по сроку: " + a.istekshie });
+    (a.sdachi || []).forEach(function (s) { out.push({ kind: "warn", text: "Ждёт вашего «Принял»: сдача " + money(s.summa) + " с пункта «" + s.punktNazvanie + "»" }); });
+    (a.kassa || []).forEach(function (p) { out.push({ kind: "info", text: "Наличные на пункте «" + p.punktNazvanie + "»: " + money(p.saldo) }); });
+    return out;
+  }
+  // Касса пункта и «Что требует внимания» (отдел 09): экраны, одинаковые в витрине и в пульте.
+  // Данные и связь с сервером: kassa-dannye.js. kassaPanelMount(root, opts): opts = { canAccept, canHandover }.
+  var KASSA_INPUT_STYLE_ = "background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font:inherit;text-align:right;";
+
+  function kassaWhen_(iso) {
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? "" : d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) + " " + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  }
+  function kassaEventText_(h) {
+    if (h.tip === "prihod") return "Выдан заказ " + esc(h.orderId) + " за наличные: +" + money(h.summa);
+    var who = h.ktoImya ? " (сдал " + esc(h.ktoImya) + ")" : "";
+    if (h.status === "prinyato") return "Сдача принята: −" + money(h.summa) + who;
+    if (h.status === "otkloneno") return "Сдача не сошлась, касса не менялась: " + money(h.summa) + who;
+    return "Сдача ждёт «Принял»: " + money(h.summa) + who;
+  }
+
+  // Блок «Что требует внимания»: строки из attentionItems()
+  function attentionHTML(items) {
+    if (!items.length) return '<div style="background:var(--ok-bg);color:var(--ok);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;">Всё спокойно: пунктов без товара, просроченных броней и наличных к приёму нет</div>';
+    return items.map(function (it) {
+      var warn = it.kind === "warn";
+      return '<div data-attention="' + it.kind + '" style="background:' + (warn ? "var(--warn-bg)" : "var(--surface-2)") + ';color:' + (warn ? "var(--warn)" : "var(--text)") + ';border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:13px;">' + esc(it.text) + '</div>';
+    }).join("");
+  }
+  function attentionMount(root) {
+    root.innerHTML = '<p class="hint-note">Проверяем…</p>';
+    return attentionLoad().then(function (a) {
+      root.innerHTML = attentionHTML(attentionItems(a));
+    }).catch(function (e) {
+      root.innerHTML = '<p class="hint-note">Не удалось загрузить: ' + esc(e && e.message ? e.message : "ошибка") + '</p>';
+    });
+  }
+
+  function kassaPanelHTML(d, opts) {
+    var h = '<div class="card" style="margin-bottom:12px;"><span class="eyebrow">Наличные на пунктах</span>' +
+      '<div style="font-size:22px;font-weight:600;margin-top:6px;" data-kassa-total>' + money(d.total) + '</div>' +
+      '<p class="hint-note">Деньги лежат у хозяев пунктов. Сумма уходит с пункта только после «Сдал» и вашего «Принял».</p></div>';
+
+    if (d.waiting.length) {
+      h += '<div class="card" style="margin-bottom:12px;"><span class="eyebrow">Ждут подтверждения</span>' + d.waiting.map(function (w) {
+        return '<div style="padding:8px 0;border-top:1px solid var(--border);" data-waiting="' + esc(w.id) + '">' +
+          '<div class="name">' + money(w.summa) + ' · ' + esc(w.punktNazvanie) + '</div>' +
+          '<div class="sku">сдал(а) ' + esc(w.ktoImya || w.kto || "—") + ' · ' + esc(kassaWhen_(w.data)) + '</div>' +
+          (opts.canAccept
+            ? '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-primary" data-accept="' + esc(w.id) + '" style="flex:1;">Принял</button>' +
+              '<button class="act-btn" data-reject="' + esc(w.id) + '">Не сошлось</button></div>'
+            : '<div class="sku">Ждёт, пока владелец нажмёт «Принял»</div>') +
+          '</div>';
+      }).join("") + '</div>';
+    }
+
+    h += d.punkty.map(function (p) {
+      return '<div class="card" style="margin-bottom:12px;" data-punkt="' + esc(p.punktId) + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+          '<div style="min-width:0;"><div class="name" style="font-weight:600;">' + esc(p.punktNazvanie) + '</div>' +
+          '<div class="sku">принято наличными ' + money(p.prihod) + ' · сдано ' + money(p.sdano) + (p.ozhidaet > 0 ? ' · ждёт подтверждения ' + money(p.ozhidaet) : '') + '</div></div>' +
+          '<div style="text-align:right;"><span class="eyebrow">Сейчас на пункте</span><br><b data-saldo="' + esc(p.punktId) + '">' + money(p.saldo) + '</b></div>' +
+        '</div>' +
+        (opts.canHandover && p.mozhnoSdat > 0
+          ? '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;">' +
+              '<input type="number" min="1" step="any" data-sum="' + esc(p.punktId) + '" value="' + p.mozhnoSdat + '" style="flex:1;min-width:0;' + KASSA_INPUT_STYLE_ + '" />' +
+              '<button class="btn-primary" data-sdal="' + esc(p.punktId) + '" style="width:auto;flex:none;padding:8px 18px;">Сдал</button></div>'
+          : '') +
+        '</div>';
+    }).join("");
+    if (!d.punkty.length) h += '<div class="empty-state"><span class="eyebrow">Пунктов нет</span><p>Наличные появятся после первой выдачи заказа за наличные.</p></div>';
+
+    if (d.history.length) {
+      h += '<div class="card"><span class="eyebrow">История кассы</span>' + d.history.slice(0, 15).map(function (e) {
+        return '<div style="padding:6px 0;border-top:1px solid var(--border);font-size:12px;"><div>' + kassaEventText_(e) + '</div>' +
+          '<div class="sku">' + esc(e.punktNazvanie) + ' · ' + esc(kassaWhen_(e.data)) + '</div></div>';
+      }).join("") + '</div>';
+    }
+    return h;
+  }
+
+  function kassaPanelMount(root, opts) {
+    function draw() {
+      return kassaLoad().then(function (d) {
+        root.innerHTML = kassaPanelHTML(d, opts);
+        root.querySelectorAll("[data-sdal]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var pid = b.getAttribute("data-sdal");
+            var inp = root.querySelector('[data-sum="' + pid + '"]');
+            b.disabled = true;
+            kassaSdat(pid, inp ? inp.value : 0).then(function () { toast("Сдача записана, ждёт подтверждения владельца"); return draw(); })
+              .catch(function (e) { toast(e && e.message ? e.message : "Не удалось сдать"); b.disabled = false; });
+          });
+        });
+        root.querySelectorAll("[data-accept]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            b.disabled = true;
+            kassaPrinyat(b.getAttribute("data-accept")).then(function () { toast("Принято, касса пункта уменьшена"); return draw(); })
+              .catch(function (e) { toast(e && e.message ? e.message : "Не удалось принять"); b.disabled = false; });
+          });
+        });
+        root.querySelectorAll("[data-reject]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            b.disabled = true;
+            kassaOtklonit(b.getAttribute("data-reject")).then(function () { toast("Сдача отклонена, касса не менялась"); return draw(); })
+              .catch(function (e) { toast(e && e.message ? e.message : "Не удалось отклонить"); b.disabled = false; });
+          });
+        });
+        if (opts.onDraw) opts.onDraw(d);
+      }).catch(function (e) {
+        root.innerHTML = '<div class="empty-state"><span class="eyebrow">Ошибка</span><p>' + esc(e && e.message ? e.message : "Не удалось загрузить кассу") + '</p></div>';
+      });
+    }
+    root.innerHTML = '<div class="empty-state"><span class="eyebrow">Касса</span><p>Загрузка…</p></div>';
+    return draw();
+  }
+  // ---------------- Деньги (отдел 09): что требует внимания, наличные на пунктах, способы оплаты ----------------
+  function renderMoney(main) {
+    var accept = cubCan("cash_manage");
+    var handover = cubCan("cash_handover") || cubCan("courier_work");
+    var editPay = cubCan("settings_edit");
+    main.innerHTML =
+      '<div class="screen-title-row"><div class="screen-title">Деньги</div><div class="screen-sub">Что требует внимания, наличные на пунктах, способы оплаты</div></div>' +
+      (accept ? '<div class="card section-gap"><span class="eyebrow">Что требует внимания</span><div id="attention-box" style="margin-top:10px;"></div></div>' : '') +
+      '<div id="kassa-box"></div>' +
+      (editPay ? '<div class="card section-gap" id="pay-methods-box"><span class="eyebrow">Способы оплаты</span><p class="hint-note">Загрузка…</p></div>' : '');
+    var onChange = function () { var box = document.getElementById("attention-box"); if (box) attentionMount(box); };
+    kassaPanelMount(document.getElementById("kassa-box"), { canAccept: accept, canHandover: handover, onDraw: onChange });
+    if (editPay) payMethodsMount(document.getElementById("pay-methods-box"));
+  }
+
+  // Галочки способов оплаты. Клиент видит только отмеченные. Криптовалюта одна не сохраняется (проверяет и экран, и сервер).
+  function payMethodsMount(box) {
+    payMethodsLoad().then(function (d) {
+      box.innerHTML =
+        '<span class="eyebrow">Способы оплаты</span>' +
+        '<p class="hint-note">Отметьте, чем могут платить клиенты. По умолчанию включены только наличные. В пробном прогоне работают наличные при получении, остальные способы пока только включаются и показываются клиенту с реквизитами.</p>' +
+        d.catalog.map(function (m) {
+          return '<div style="padding:10px 0;border-top:1px solid var(--border);" data-method="' + esc(m.code) + '">' +
+            '<label style="display:flex;align-items:center;gap:10px;"><input type="checkbox" data-pay-check="' + esc(m.code) + '"' + (m.enabled ? " checked" : "") + ' style="width:auto;" /> <span class="name">' + esc(m.label) + '</span></label>' +
+            (m.code === "crypto" ? '<p class="hint-note">Криптовалюта не может быть единственным способом: оставьте ещё наличные или QR.</p>' : '') +
+            m.fields.map(function (f) {
+              return fieldHTML(esc(f.label), (f.key.indexOf("details") !== -1
+                ? '<textarea rows="3" data-pay-field="' + esc(f.key) + '">' + esc(f.value) + '</textarea>'
+                : '<input data-pay-field="' + esc(f.key) + '" value="' + esc(f.value) + '" />'));
+            }).join("") +
+          '</div>';
+        }).join("") +
+        '<button class="btn-primary" id="pay-save" style="margin-top:12px;">Сохранить способы</button>';
+
+      box.querySelectorAll("[data-pay-field]").forEach(function (el) {
+        el.addEventListener("change", function () {
+          payFieldSave(el.getAttribute("data-pay-field"), el.value).then(function () { toast("Сохранено"); })
+            .catch(function (e) { toast(errMsg(e)); });
+        });
+      });
+      document.getElementById("pay-save").addEventListener("click", function () {
+        var list = [];
+        box.querySelectorAll("[data-pay-check]").forEach(function (c) { if (c.checked) list.push(c.getAttribute("data-pay-check")); });
+        var err = payMethodsCheck(list);
+        if (err) { toast(err); return; }
+        payMethodsSave(list).then(function () { toast("Способы оплаты сохранены"); })
+          .catch(function (e) { toast(errMsg(e)); });
+      });
+    }).catch(function (e) {
+      box.innerHTML = '<span class="eyebrow">Способы оплаты</span><p class="hint-note">Не удалось загрузить: ' + esc(errMsg(e)) + '</p>';
+    });
+  }
+  // ---------------- Настройки (прежняя вкладка «Тексты») ----------------
+  // Единый список настроек: ключ листа «Тексты», группа, подпись, подсказка, тип, запасное значение.
+  // Запасные значения витрины (DEFAULT_TEXTS в vitrina/yadro-znachki-i-teksty.js) обязаны совпадать с d здесь:
+  // сверяет proverki/02-nastroyki.js. Реестр ключей для сервера — dogovor/NASTROYKI.md.
+  var SETTINGS_GROUPS = [
+    { id: "name", title: "Название", sub: "Как приложение называется для людей" },
+    { id: "items", title: "Что вы возите и считаете", sub: "Названия предметов и единицы измерения" },
+    { id: "money", title: "Деньги", sub: "Символ, формат сумм, другие валюты" },
+    { id: "look", title: "Вид", sub: "Цвет, шрифт, тема" },
+    { id: "titles", title: "Тексты экранов", sub: "Заголовки и кнопки покупателя" }
+  ];
+  var SETTINGS_SCHEMA = [
+    { k: "app_name", g: "name", l: "Название приложения", ty: "text", d: "Курьер-склад" },
+    { k: "app_tagline", g: "name", l: "Подзаголовок", ty: "text", d: "Заказы и доставка" },
+    { k: "login_subtitle", g: "name", l: "Текст на экране входа", ty: "text", d: "Выберите роль, чтобы продолжить" },
+    { k: "logo_image", g: "name", l: "Логотип (ссылка на картинку)", ty: "text", d: "", h: "Пусто — стандартный значок." },
+    { k: "pub_cub_name", g: "name", l: "Название пульта управления", ty: "text", d: "Пульт управления" },
+    { k: "pub_cub_subtitle", g: "name", l: "Подпись пульта на входе", ty: "text", d: "Личный пульт владельца" },
+
+    { k: "pub_item_one", g: "items", l: "Как называется один предмет", ty: "text", d: "Товар", h: "Например: товар, посылка, груз." },
+    { k: "pub_item_many", g: "items", l: "Как называются они во множественном числе", ty: "text", d: "Товары" },
+    { k: "pub_receipt_title", g: "items", l: "Название прихода на склад", ty: "text", d: "Приход товара" },
+    { k: "pub_unit_short", g: "items", l: "Единица коротко", ty: "text", d: "шт", h: "Например: шт, кг, г, л. Идёт после количества и в цене за единицу." },
+    { k: "pub_unit_name", g: "items", l: "Единица полностью", ty: "text", d: "штука", h: "Например: штука, килограмм." },
+    { k: "pub_qty_label", g: "items", l: "Подпись поля количества", ty: "text", d: "Количество", h: "Например: количество, вес." },
+    { k: "pub_qty_presets", g: "items", l: "Быстрые количества", ty: "text", d: "1 2 5", h: "Числа через пробел. Дробные с запятой: 0,25 0,5 1." },
+    { k: "pub_qty_step", g: "items", l: "Шаг количества", ty: "number", d: "1", h: "Целые штуки — 1; граммы — 0,05." },
+    { k: "pub_qty_min", g: "items", l: "Минимальное количество", ty: "number", d: "1" },
+
+    { k: "pub_currency_symbol", g: "money", l: "Символ основной валюты", ty: "text", d: "", h: "Например: ₽, ₫, ₸, $. Пусто — суммы без символа." },
+    { k: "pub_currency_position", g: "money", l: "Где символ", ty: "select", d: "after", o: [["after", "После суммы: 1 000 ₽"], ["before", "Перед суммой: ₽ 1 000"]] },
+    { k: "pub_currency_decimals", g: "money", l: "Знаков после запятой", ty: "select", d: "0", o: [["0", "Без копеек"], ["1", "1 знак"], ["2", "2 знака (копейки, центы)"], ["3", "3 знака"], ["4", "4 знака"]] },
+    { k: "pub_number_locale", g: "money", l: "Как писать числа", ty: "select", d: "ru-RU", o: [["ru-RU", "1 234,5 (русский)"], ["en-US", "1,234.5 (английский)"], ["de-DE", "1.234,5 (немецкий)"], ["vi-VN", "1.234,5 (вьетнамский)"], ["kk-KZ", "1 234,5 (казахский)"]] },
+    { k: "pub_currencies", g: "money", l: "Другие валюты", ty: "curlist", d: "[]" },
+    { k: "expense_cats", g: "money", l: "Статьи расходов", ty: "text", d: "Закупка товара, Реклама, Аренда, Зарплата, Прочее", h: "Через запятую." },
+
+    { k: "pub_color_accent", g: "look", l: "Главный цвет", ty: "color", d: "", h: "Кнопки и акценты. Остальные оттенки и тёмная тема подберутся сами." },
+    { k: "pub_color_accent_dark", g: "look", l: "Главный цвет в тёмной теме", ty: "color", d: "", h: "Пусто — подберётся от главного." },
+    { k: "pub_font_style", g: "look", l: "Шрифт", ty: "select", d: "system", o: [["system", "Обычный системный"], ["serif", "С засечками"], ["rounded", "Скруглённый"], ["mono", "Моноширинный"]] },
+    { k: "pub_theme_default", g: "look", l: "Тема", ty: "select", d: "auto", o: [["auto", "Как в телефоне"], ["light", "Всегда светлая"], ["dark", "Всегда тёмная"]] },
+
+    { k: "catalog_title", g: "titles", l: "Заголовок каталога", ty: "text", d: "Каталог" },
+    { k: "empty_catalog", g: "titles", l: "Когда каталог пуст", ty: "text", d: "Товары ещё не добавлены" },
+    { k: "cart_title", g: "titles", l: "Заголовок корзины", ty: "text", d: "Корзина" },
+    { k: "checkout_button", g: "titles", l: "Кнопка оформления", ty: "text", d: "Оформить заказ" },
+    { k: "orders_title", g: "titles", l: "Заголовок заказов", ty: "text", d: "Заказы" }
+  ];
+
+  var currencyDraft_ = [];
+
+  function settingFieldHTML_(f) {
+    var cur = state.texts[f.k] == null ? "" : String(state.texts[f.k]);
+    var inner;
+    if (f.ty === "select") {
+      var sel = cur || f.d;
+      inner = '<select data-sk="' + f.k + '">' + f.o.map(function (o) {
+        return '<option value="' + esc(o[0]) + '"' + (o[0] === sel ? " selected" : "") + '>' + esc(o[1]) + '</option>';
+      }).join("") + '</select>';
+    } else if (f.ty === "color") {
+      var on = hexOk_(cur);
+      inner = '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<input type="color" data-sk="' + f.k + '" value="' + (on ? cur : (f.k === "pub_color_accent_dark" ? "#c3cbdb" : "#2b3648")) + '" style="width:56px;height:40px;padding:2px;flex:none;" />' +
+        '<span class="hint-note" style="margin:0;flex:1;">' + (on ? esc(cur) : "по умолчанию") + '</span>' +
+        '<button class="btn-secondary" type="button" data-reset="' + f.k + '">Сбросить</button></div>';
+    } else {
+      inner = '<input data-sk="' + f.k + '" value="' + esc(cur) + '" placeholder="' + esc(f.d) + '"' + (f.ty === "number" ? ' inputmode="decimal"' : "") + ' />';
+    }
+    return fieldHTML(esc(f.l), inner) + (f.h ? '<p class="hint-note" style="margin:-4px 0 12px;">' + esc(f.h) + '</p>' : "");
+  }
+
+  function currencyEditorHTML_() {
+    var rows = currencyDraft_.map(function (c, i) {
+      return '<div class="cur-row" data-i="' + i + '" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);">' +
+        '<input data-c="code" value="' + esc(c.code) + '" placeholder="Код" style="width:64px;" />' +
+        '<input data-c="symbol" value="' + esc(c.symbol) + '" placeholder="Знак" style="width:64px;" />' +
+        '<input data-c="rate" value="' + esc(c.rate) + '" placeholder="Курс" inputmode="decimal" style="flex:1;min-width:80px;" />' +
+        '<label style="display:flex;gap:4px;align-items:center;font-size:12px;"><input type="checkbox" data-c="pay"' + (c.pay ? " checked" : "") + ' style="width:auto;" />оплата</label>' +
+        '<button class="act-btn" type="button" data-cmove="-1" aria-label="Выше">↑</button>' +
+        '<button class="act-btn" type="button" data-cmove="1" aria-label="Ниже">↓</button>' +
+        '<button class="act-btn" type="button" data-cdel="1" aria-label="Убрать">✕</button>' +
+      '</div>';
+    }).join("");
+    return (rows || '<p class="hint-note" style="margin:0 0 10px;">Других валют нет. Добавьте, если нужны подсказки «сколько это в…» или приём оплаты в другой валюте.</p>') +
+      '<button class="btn-secondary" type="button" id="cur-add" style="width:100%;">Добавить валюту</button>' +
+      '<p class="hint-note" style="margin:10px 0 0;">Курс — сколько этой валюты в одной основной единице (например, 1 ₫ = 0,0033 ₽). Порядок строк = порядок показа. «Оплата» — принимать оплату в этой валюте.</p>';
+  }
+
+  function previewHTML_() {
+    var h = currencyHints(1234567);
+    return '<span class="eyebrow">Так это будет выглядеть</span>' +
+      '<p style="margin:8px 0 0;font-size:14px;">Сумма: <b>' + esc(fmtMoney(1234567.5)) + '</b></p>' +
+      '<p style="margin:4px 0 0;font-size:14px;">Цена за единицу: <b>' + esc(unitPrice(250)) + '</b></p>' +
+      '<p style="margin:4px 0 0;font-size:14px;">Количество: <b>' + esc(fmtQty(qtyPresets()[0])) + '</b></p>' +
+      (h.length ? '<p style="margin:4px 0 0;font-size:14px;">В других валютах: <b>' + esc(h.join(" · ")) + '</b></p>' : "");
+  }
+
+  function saveSetting_(key, value, after) {
+    return apiPost("setText", { key: key, value: value })
+      .then(assertOk)
+      .then(function () {
+        state.texts[key] = value;
+        applyBranding("cub");
+        var pv = document.getElementById("set-preview");
+        if (pv) pv.innerHTML = previewHTML_();
+        toast("Сохранено");
+        if (after) after();
+      })
+      .catch(function (e) { toast(errMsg(e)); });
+  }
+
+  function saveCurrencies_() {
+    var list = currencyDraft_.filter(function (c) { return String(c.code).trim(); }).map(function (c) {
+      return { code: String(c.code).trim(), symbol: String(c.symbol || "").trim(), rate: String(c.rate == null ? "" : c.rate).trim(), pay: !!c.pay };
+    });
+    return saveSetting_("pub_currencies", JSON.stringify(list));
+  }
+
+  function bindCurrencies_(box) {
+    function rerender() { box.innerHTML = currencyEditorHTML_(); bindCurrencies_(box); }
+    box.querySelectorAll(".cur-row").forEach(function (row) {
+      var i = Number(row.getAttribute("data-i"));
+      row.querySelectorAll("[data-c]").forEach(function (inp) {
+        inp.addEventListener("change", function () {
+          var f = inp.getAttribute("data-c");
+          currencyDraft_[i][f] = f === "pay" ? inp.checked : inp.value;
+          saveCurrencies_();
+        });
+      });
+      row.querySelectorAll("[data-cmove]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var j = i + Number(b.getAttribute("data-cmove"));
+          if (j < 0 || j >= currencyDraft_.length) return;
+          var x = currencyDraft_[i]; currencyDraft_[i] = currencyDraft_[j]; currencyDraft_[j] = x;
+          rerender(); saveCurrencies_();
+        });
+      });
+      row.querySelector("[data-cdel]").addEventListener("click", function () {
+        currencyDraft_.splice(i, 1);
+        rerender(); saveCurrencies_();
+      });
+    });
+    document.getElementById("cur-add").addEventListener("click", function () {
+      currencyDraft_.push({ code: "", symbol: "", rate: "", pay: false });
+      rerender();
+    });
+  }
+
+  function renderTexts(main) {
+    apiPost("getTexts").then(assertOk).then(function (res) {
+      if (state.tab !== "texts") return;
+      state.texts = (res && res.texts) || {};
+      applyBranding("cub");
+      currencyDraft_ = getCurrencies().map(function (c) { return { code: c.code, symbol: c.symbol, rate: c.rate || "", pay: c.pay }; });
+
+      var known = {};
+      SETTINGS_SCHEMA.forEach(function (f) { known[f.k] = 1; });
+      var keys = Object.keys(state.texts).filter(function (k) { return k !== "site_locked" && !known[k]; }).sort();
+
+      var groups = SETTINGS_GROUPS.map(function (g) {
+        var fields = SETTINGS_SCHEMA.filter(function (f) { return f.g === g.id; });
+        return '<div class="card section-gap">' +
+          '<span class="eyebrow">' + esc(g.title) + '</span>' +
+          '<p class="hint-note" style="margin:4px 0 12px;">' + esc(g.sub) + '</p>' +
+          fields.map(function (f) {
+            if (f.ty === "curlist") {
+              return '<div class="field"><label>' + esc(f.l) + '</label><div id="cur-box">' + currencyEditorHTML_() + '</div></div>';
+            }
+            return settingFieldHTML_(f);
+          }).join("") +
+        '</div>';
+      }).join("");
+
+      main.innerHTML =
+        '<div class="screen-title-row"><div class="screen-title">Настройки</div>' +
+        '<div class="screen-sub">Названия, деньги, цвета и тексты приложения</div></div>' +
+        '<div class="card" id="set-preview">' + previewHTML_() + '</div>' +
+        groups +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Другие ключи</span>' +
+          '<p class="legend">' +
+            '<code>icon_*</code> — URL значков ролей, <code>pickup_address</code>, <code>pickup_lat</code>, <code>pickup_lng</code> — точка выдачи, ' +
+            '<code>lock_message</code> — текст заглушки при блокировке, ' +
+            '<code>cub_admins</code> — ID админов ЦУБ через запятую, ' +
+            '<code>cub_buh</code> — ID бухгалтеров через запятую (доступ только к Аналитике).' +
+          '</p>' +
+          '<div id="texts-list">' +
+          (keys.length
+            ? keys.map(function (k) {
+                return '<div class="kv-row">' +
+                  '<div class="kv-key">' + esc(k) + '</div>' +
+                  '<input data-key="' + esc(k) + '" value="' + esc(state.texts[k]) + '" />' +
+                '</div>';
+              }).join("")
+            : '<p class="hint-note" style="margin:0;">Других ключей пока нет.</p>') +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Новый ключ</span>' +
+          '<div style="margin-top:12px;">' +
+            fieldHTML("Ключ", '<input id="new-key" placeholder="например, promo_banner" />') +
+            fieldHTML("Значение", '<input id="new-value" placeholder="Текст или URL" />') +
+            '<button class="btn-secondary" id="add-key" style="width:100%;">Добавить ключ</button>' +
+          '</div>' +
+        '</div>';
+
+      main.querySelectorAll("[data-sk]").forEach(function (inp) {
+        inp.addEventListener("change", function () {
+          var key = inp.getAttribute("data-sk");
+          saveSetting_(key, inp.value, inp.type === "color" ? function () {
+            var lab = inp.parentNode.querySelector("span");
+            if (lab) lab.textContent = inp.value;
+          } : null);
+        });
+      });
+      main.querySelectorAll("[data-reset]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var key = btn.getAttribute("data-reset");
+          saveSetting_(key, "", function () { renderTexts(main); });
+        });
+      });
+      bindCurrencies_(document.getElementById("cur-box"));
+
+      main.querySelectorAll("#texts-list input[data-key]").forEach(function (inp) {
+        inp.addEventListener("change", function () {
+          var key = inp.getAttribute("data-key");
+          apiPost("setText", { key: key, value: inp.value })
+            .then(assertOk)
+            .then(function () { state.texts[key] = inp.value; toast("Сохранено: " + key); })
+            .catch(function (e) { toast(errMsg(e)); });
+        });
+      });
+
+      document.getElementById("add-key").addEventListener("click", function () {
+        var key = document.getElementById("new-key").value.trim();
+        var value = document.getElementById("new-value").value;
+        if (!key) { toast("Укажите ключ"); return; }
+        var btn = document.getElementById("add-key");
+        btn.disabled = true;
+        apiPost("setText", { key: key, value: value })
+          .then(assertOk)
+          .then(function () { toast("Ключ добавлен: " + key); renderTab(); })
+          .catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+      });
+    }).catch(function (e) {
+      if (state.tab !== "texts") return;
+      main.innerHTML = errorHTML(errMsg(e));
+      toast(errMsg(e));
+    });
+  }
+  // Остатки по пунктам выдачи (отдел 03): данные, демо-набор подарков, связь с сервером.
+  // Общий блок обеих страниц (витрина и пульт). Контракт: otdely/MVP-1.md, лист «Остатки»
+  // (tovar_id, punkt_id, kolichestvo, bron; доступно = kolichestvo - bron), dogovor/03-ostatki.md.
+  // Для других отделов: ostatkiLoad(), ostatkiDostupno(rows, tovarId, punktId), ostatokSet(), giftsLoad(),
+  // katalogSPunktami(); в демо-режиме зеркало серверных операций: ostatkiDemoZabronirovat, ostatkiDemoSnyatBron,
+  // ostatkiDemoVydat, ostatkiDemoPrihod (то же, что zabronirovat_, snyatBron_, spisatVydannoe_, prihodNaPunkt_).
+  var OSTATKI_DEMO = /[?&]demo=1/.test(location.search);
+  var OSTATKI_DEMO_KEY = "kurier_demo_ostatki";
+
+  // Заглушка списка пунктов, пока блок пунктов (отдел 07, punkty-dannye.js) не подключён в страницу
+  var PUNKTY_ZAGLUSHKA_ = [
+    { id: "p1", nazvanie: "Пункт 1", adres: "", chasy: "" },
+    { id: "p2", nazvanie: "Пункт 2", adres: "", chasy: "" },
+    { id: "p3", nazvanie: "Пункт 3", adres: "", chasy: "" },
+    { id: "p4", nazvanie: "Пункт 4", adres: "", chasy: "" }
+  ];
+
+  // Демо-набор: 8 подарков, цена в донгах. q — сколько на 1-м, 2-м, 3-м, 4-м пункте списка.
+  // Набор рассчитан на показ: один товар по одной штуке (последняя штука), один нигде не лежит (уходит из каталога).
+  var GIFTS_DEMO_ = [
+    { tovarId: 1, name: "Чайный набор в коробке", price: 250000, q: [5, 3, 0, 2] },
+    { tovarId: 2, name: "Ароматическая свеча", price: 180000, q: [1, 0, 4, 6] },
+    { tovarId: 3, name: "Кружка с гравировкой", price: 220000, q: [0, 2, 2, 1] },
+    { tovarId: 4, name: "Шёлковый шарф", price: 450000, q: [1, 1, 0, 0] },
+    { tovarId: 5, name: "Открытки ручной работы", price: 90000, q: [10, 8, 6, 4] },
+    { tovarId: 6, name: "Кокосовое мыло, подарочная коробка", price: 160000, q: [0, 0, 3, 0] },
+    { tovarId: 7, name: "Бамбуковая шкатулка", price: 380000, q: [2, 0, 0, 5] },
+    { tovarId: 8, name: "Брелок «Нячанг»", price: 70000, q: [0, 0, 0, 0] }
+  ];
+
+  function ostatkiRound_(x) { return Math.round(x * 1000) / 1000; }
+
+  // Цены, изменённые руками в демо, лежат в памяти браузера (общие для витрины и пульта)
+  var OSTATKI_DEMO_CENY_KEY = "kurier_demo_ceny";
+  function giftPricesDemo_() {
+    try { return JSON.parse(localStorage.getItem(OSTATKI_DEMO_CENY_KEY) || "{}") || {}; } catch (e) { return {}; }
+  }
+  function giftPriceDemoSet(tovarId, price) {
+    var m = giftPricesDemo_();
+    m[String(tovarId)] = Number(price);
+    try { localStorage.setItem(OSTATKI_DEMO_CENY_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+
+  // Подарки для демо в том виде, в каком товары лежат в витрине
+  function demoGifts() {
+    var over = giftPricesDemo_();
+    return GIFTS_DEMO_.map(function (g) {
+      var price = isFinite(over[String(g.tovarId)]) && over[String(g.tovarId)] >= 0 ? over[String(g.tovarId)] : g.price;
+      return { tovarId: g.tovarId, name: g.name, price: price, stock: g.q.reduce(function (a, b) { return a + b; }, 0), image: "" };
+    });
+  }
+
+  // Витрина в демо-режиме берёт подарки отсюда, а не из старого набора (другие экраны видят тот же список)
+  if (OSTATKI_DEMO && typeof state === "object" && state && "productsLoaded" in state) {
+    state.products = demoGifts();
+    state.productsLoaded = true;
+  }
+
+  // Пункты для остатков: из блока пунктов (отдел 07), если он есть, иначе заглушка. Promise<[{id, nazvanie, adres, chasy}]>
+  function ostatkiPunkty() {
+    var keep = function (list) { state.punktyDlyaOstatkov = list; return list; };
+    if (typeof loadPunkty === "function") {
+      return loadPunkty().then(function (list) { return keep(list || []); }).catch(function () { return keep(OSTATKI_DEMO ? PUNKTY_ZAGLUSHKA_.slice() : []); });
+    }
+    return Promise.resolve(keep(OSTATKI_DEMO ? PUNKTY_ZAGLUSHKA_.slice() : []));
+  }
+
+  // ---- демо-хранилище (localStorage, общее для витрины и пульта) ----
+  function ostatkiDemoRead_(punkty) {
+    var rows = null;
+    try { rows = JSON.parse(localStorage.getItem(OSTATKI_DEMO_KEY) || "null"); } catch (e) { rows = null; }
+    var ids = (punkty || []).map(function (p) { return String(p.id); });
+    var fits = Array.isArray(rows) && rows.some(function (r) { return ids.indexOf(String(r.punkt_id)) !== -1; });
+    if (!fits) {
+      rows = [];
+      GIFTS_DEMO_.forEach(function (g) {
+        ids.slice(0, 4).forEach(function (pid, i) {
+          if (g.q[i] > 0) rows.push({ tovar_id: String(g.tovarId), punkt_id: pid, kolichestvo: g.q[i], bron: 0 });
+        });
+      });
+      ostatkiDemoWrite_(rows);
+    }
+    return rows;
+  }
+  function ostatkiDemoWrite_(rows) {
+    try { localStorage.setItem(OSTATKI_DEMO_KEY, JSON.stringify(rows)); } catch (e) {}
+  }
+  function ostatkiDemoNames_() {
+    var m = {};
+    GIFTS_DEMO_.forEach(function (g) { m[String(g.tovarId)] = g.name; });
+    return m;
+  }
+
+  // Строки с посчитанным «доступно». Promise<[{tovar_id, punkt_id, kolichestvo, bron, dostupno}]>
+  function ostatkiLoad(punkty) {
+    var finish = function (rows) {
+      state.ostatki = rows.map(function (r) {
+        var k = Number(r.kolichestvo) || 0, b = Number(r.bron) || 0;
+        return { tovar_id: String(r.tovar_id), punkt_id: String(r.punkt_id), kolichestvo: k, bron: b, dostupno: ostatkiRound_(k - b) };
+      });
+      return state.ostatki;
+    };
+    if (OSTATKI_DEMO) {
+      var have = punkty ? Promise.resolve(punkty) : ostatkiPunkty();
+      return have.then(function (pl) { return finish(ostatkiDemoRead_(pl)); });
+    }
+    return apiPost("getOstatki", {}).then(assertOk).then(function (res) {
+      if (!res || !Array.isArray(res.data)) throw new Error("bad shape");
+      return finish(res.data);
+    });
+  }
+
+  // Доступно товара на пункте (0, если строки нет)
+  function ostatkiDostupno(rows, tovarId, punktId) {
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i].tovar_id) === String(tovarId) && String(rows[i].punkt_id) === String(punktId)) return rows[i].dostupno;
+    }
+    return 0;
+  }
+
+  // Ручная правка остатка. Promise<строка>. Меньше брони нельзя (так же отвечает сервер).
+  function ostatokSet(tovarId, punktId, kol) {
+    var q = Number(kol);
+    if (String(kol) === "" || kol == null || !isFinite(q) || q < 0) return Promise.reject(new Error("Количество: число от нуля"));
+    if (OSTATKI_DEMO) {
+      var rows = ostatkiDemoRead_(state.punktyDlyaOstatkov || []), hit = null;
+      rows.forEach(function (r) { if (String(r.tovar_id) === String(tovarId) && String(r.punkt_id) === String(punktId)) hit = r; });
+      if (hit) {
+        if (q < hit.bron - 1e-9) return Promise.reject(new Error("Нельзя поставить меньше брони: забронировано " + hit.bron));
+        hit.kolichestvo = ostatkiRound_(q);
+      } else {
+        hit = { tovar_id: String(tovarId), punkt_id: String(punktId), kolichestvo: ostatkiRound_(q), bron: 0 };
+        rows.push(hit);
+      }
+      ostatkiDemoWrite_(rows);
+      return Promise.resolve(hit);
+    }
+    return apiPost("setOstatok", { tovar_id: tovarId, punkt_id: punktId, kolichestvo: q }).then(assertOk).then(function (res) { return res.data; });
+  }
+
+  // Подарки (товары) для экранов: [{tovarId, name, price, image, stock}]. В демо - демо-набор.
+  function giftsLoad() {
+    if (OSTATKI_DEMO) return Promise.resolve(demoGifts());
+    if (typeof loadProducts === "function") return loadProducts();
+    return apiPost("getTovary", {}).then(assertOk).then(function (res) {
+      return ((res && res.data) || []).map(function (t) { return { tovarId: t.id, name: t.name, price: t.price, stock: t.ostatok, image: t.image || "" }; });
+    });
+  }
+
+  // Чистая функция каталога: подарки + остатки + активные пункты -> подарки с пунктами.
+  // У каждого: punkty = [{id, nazvanie, adres, chasy, dostupno}] только там, где доступно > 0 и пункт активен;
+  // stock = сумма доступного. Подарки без единого пункта убираются, если onlyAvailable не false.
+  function katalogSPunktami(gifts, rows, punkty, onlyAvailable) {
+    var out = [];
+    (gifts || []).forEach(function (g) {
+      var pl = [], total = 0;
+      (punkty || []).forEach(function (p) {
+        var d = ostatkiDostupno(rows || [], g.tovarId, p.id);
+        if (d > 0) { pl.push({ id: String(p.id), nazvanie: p.nazvanie, adres: p.adres || "", chasy: p.chasy || "", dostupno: d }); total += d; }
+      });
+      var c = {};
+      for (var k in g) c[k] = g[k];
+      c.punkty = pl;
+      c.stock = ostatkiRound_(total);
+      if (pl.length || onlyAvailable === false) out.push(c);
+    });
+    return out;
+  }
+
+  // ---- демо-зеркало серверных операций (для отделов 04, 05, 08 в режиме ?demo=1) ----
+  // items: [{tovarId, kolichestvo}] (понимаются и tovar_id/id, qty/quantity); Promise.resolve({success, error?, data?})
+  function ostatkiDemoChange_(items, punktId, op) {
+    if (!Array.isArray(items) || !items.length) return { success: false, error: "Нет позиций" };
+    var pid = String(punktId == null ? "" : punktId).trim();
+    if (!pid) return { success: false, error: "Не указан пункт" };
+    var sums = {}, order = [];
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var id = it.tovarId != null ? it.tovarId : (it.tovar_id != null ? it.tovar_id : it.id);
+      var raw = it.kolichestvo != null ? it.kolichestvo : (it.qty != null ? it.qty : (it.quantity != null ? it.quantity : 1));
+      var n = Number(raw);
+      if (id == null || id === "") return { success: false, error: "У позиции нет товара" };
+      if (!isFinite(n) || n <= 0) return { success: false, error: "Количество должно быть больше нуля" };
+      var key = String(id);
+      if (!(key in sums)) { sums[key] = 0; order.push(key); }
+      sums[key] = ostatkiRound_(sums[key] + n);
+    }
+    var rows = ostatkiDemoRead_(state.punktyDlyaOstatkov || []);
+    var names = ostatkiDemoNames_(), unit = (typeof unitShort === "function" ? unitShort() : "") || "шт";
+    var plan = [];
+    for (var j = 0; j < order.length; j++) {
+      var tid = order[j], n2 = sums[tid], row = null;
+      rows.forEach(function (r) { if (String(r.tovar_id) === tid && String(r.punkt_id) === pid) row = r; });
+      var name = names[tid] || ("товар " + tid);
+      if (!row) {
+        if (op !== "prihod") return { success: false, error: "«" + name + "» на этом пункте нет" };
+        row = { tovar_id: tid, punkt_id: pid, kolichestvo: 0, bron: 0, fresh: true };
+      }
+      var c = { ref: row, kolichestvo: row.kolichestvo, bron: row.bron };
+      if (op === "bron") {
+        var free = ostatkiRound_(c.kolichestvo - c.bron);
+        if (n2 > free + 1e-9) return { success: false, error: "Не хватает «" + name + "» на пункте: доступно " + free + " " + unit + ", нужно " + n2 };
+        c.bron += n2;
+      } else if (op === "snyat") {
+        c.bron = Math.max(0, c.bron - n2);
+      } else if (op === "vydat") {
+        if (n2 > c.kolichestvo + 1e-9) return { success: false, error: "На пункте нет столько «" + name + "»: есть " + c.kolichestvo + " " + unit + ", нужно " + n2 };
+        c.kolichestvo -= n2;
+        c.bron = Math.max(0, c.bron - n2);
+      } else if (op === "prihod") {
+        c.kolichestvo += n2;
+      }
+      plan.push(c);
+    }
+    plan.forEach(function (c) {
+      c.ref.kolichestvo = ostatkiRound_(c.kolichestvo);
+      c.ref.bron = ostatkiRound_(c.bron);
+      if (c.ref.fresh) { delete c.ref.fresh; rows.push(c.ref); }
+    });
+    ostatkiDemoWrite_(rows);
+    return { success: true };
+  }
+  function ostatkiDemoZabronirovat(items, punktId) { return ostatkiDemoChange_(items, punktId, "bron"); }
+  function ostatkiDemoSnyatBron(items, punktId) { return ostatkiDemoChange_(items, punktId, "snyat"); }
+  function ostatkiDemoVydat(items, punktId) { return ostatkiDemoChange_(items, punktId, "vydat"); }
+  function ostatkiDemoPrihod(items, punktId) { return ostatkiDemoChange_(items, punktId, "prihod"); }
+
+  // Панель «Остатки по пунктам» (отдел 03): одна и та же на экране склада витрины и во вкладке «Товары» пульта.
+  // Данные и связь с сервером: ostatki-dannye.js. Загрузка: ostatkiPanelLoad() -> Promise<{gifts, punkty, rows}>.
+  function ostatkiPanelLoad() {
+    return Promise.all([giftsLoad(), ostatkiPunkty()]).then(function (r) {
+      return ostatkiLoad(r[1]).then(function (rows) { return { gifts: r[0], punkty: r[1], rows: rows }; });
+    });
+  }
+  function ostatkiRow_(d, g, p) {
+    for (var i = 0; i < d.rows.length; i++) {
+      if (String(d.rows[i].tovar_id) === String(g) && String(d.rows[i].punkt_id) === String(p)) return d.rows[i];
+    }
+    return null;
+  }
+  // Поля берут цвета темы (в пульте у голого input иначе белый фон)
+  var OSTATKI_INPUT_STYLE_ = "background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font:inherit;text-align:right;";
+  // opts: { canStock, canPrice }
+  function ostatkiPanelHTML(d, opts) {
+    var priceLabel = "Цена" + (currencySym() ? ", " + esc(currencySym()) : "") + (unitShort() ? "/" + esc(unitShort()) : "");
+    return (!d.punkty.length
+        ? '<div class="empty-state"><span class="eyebrow">Пунктов нет</span><p>Остатки хранятся по пунктам выдачи. Пункты ставит картограф.</p></div>'
+        : '') +
+      (!d.gifts.length ? '<div class="empty-state"><span class="eyebrow">' + esc(t("pub_item_many")) + '</span><p>' + esc(t("empty_catalog")) + '</p></div>' : '') +
+      d.gifts.map(function (g) {
+        var total = d.punkty.reduce(function (n, p) { var r = ostatkiRow_(d, g.tovarId, p.id); return n + (r ? r.dostupno : 0); }, 0);
+        return '<div class="card" style="margin-bottom:12px;" data-g="' + esc(g.tovarId) + '">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+            '<div><div class="name" style="font-weight:600;">' + esc(g.name) + '</div><div class="sku">ID ' + esc(g.tovarId) + ' · всего доступно <span data-total="' + esc(g.tovarId) + '">' + fmtQty(total) + '</span></div></div>' +
+            '<div style="text-align:right;"><span class="eyebrow">' + priceLabel + '</span><br>' +
+            '<input class="editable" data-price="' + esc(g.tovarId) + '" type="number" min="0" step="any" value="' + Number(g.price) + '"' + (opts.canPrice ? "" : " disabled") + ' style="width:100px;' + OSTATKI_INPUT_STYLE_ + '" /></div>' +
+          '</div>' +
+          d.punkty.map(function (p) {
+            var r = ostatkiRow_(d, g.tovarId, p.id);
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border);">' +
+              '<div style="min-width:0;"><div class="name">' + esc(p.nazvanie) + '</div>' +
+                '<div class="sku" data-info="' + esc(g.tovarId) + '|' + esc(p.id) + '">в брони ' + fmtQty(r ? r.bron : 0) + ' · доступно ' + fmtQty(r ? r.dostupno : 0) + '</div></div>' +
+              '<input class="editable" data-stock="' + esc(g.tovarId) + '" data-punkt="' + esc(p.id) + '" type="number" min="0" step="' + qtyStep() + '" value="' + (r ? r.kolichestvo : 0) + '"' + (opts.canStock ? "" : " disabled") + ' style="width:90px;' + OSTATKI_INPUT_STYLE_ + '" />' +
+            '</div>';
+          }).join("") +
+        '</div>';
+      }).join("");
+  }
+  // opts: { savePrice(tovarId, price) -> Promise }
+  function ostatkiPanelBind(root, d, opts) {
+    root.querySelectorAll("[data-stock]").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var g = inp.getAttribute("data-stock"), p = inp.getAttribute("data-punkt");
+        var before = ostatkiRow_(d, g, p);
+        ostatokSet(g, p, inp.value).then(function (res) {
+          var k = Number(res.kolichestvo), b = Number(res.bron) || 0;
+          if (before) { before.kolichestvo = k; before.bron = b; before.dostupno = ostatkiRound_(k - b); }
+          else d.rows.push({ tovar_id: String(g), punkt_id: String(p), kolichestvo: k, bron: b, dostupno: ostatkiRound_(k - b) });
+          var cur = ostatkiRow_(d, g, p);
+          var info = root.querySelector('[data-info="' + g + "|" + p + '"]');
+          if (info && cur) info.textContent = "в брони " + fmtQty(cur.bron) + " · доступно " + fmtQty(cur.dostupno);
+          var tot = root.querySelector('[data-total="' + g + '"]');
+          if (tot) tot.textContent = fmtQty(d.punkty.reduce(function (n, pp) { var r = ostatkiRow_(d, g, pp.id); return n + (r ? r.dostupno : 0); }, 0));
+          toast("Сохранено");
+        }).catch(function (err) {
+          inp.value = before ? before.kolichestvo : 0;
+          toast(err && err.message ? err.message : "Не удалось сохранить");
+        });
+      });
+    });
+    root.querySelectorAll("[data-price]").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var id = inp.getAttribute("data-price"), val = Number(inp.value);
+        if (!(val >= 0)) { toast("Цена: число от нуля"); return; }
+        var p = opts.savePrice ? opts.savePrice(id, val) : Promise.reject(new Error("Цену здесь менять нельзя"));
+        p.then(function () { toast("Сохранено"); }).catch(function (err) { toast(err && err.message ? err.message : "Не удалось сохранить цену"); });
+      });
+    });
+  }
+  // Сохранение цены: в демо в памяти браузера, иначе действие updateTovaryPrice
+  function giftPriceSave(tovarId, price) {
+    if (OSTATKI_DEMO) { giftPriceDemoSet(tovarId, price); return Promise.resolve(); }
+    return apiPost("updateTovaryPrice", { tovarId: tovarId, newPrice: price }).then(assertOk).then(function () {
+      if (state.products) state.products.forEach(function (p) { if (String(p.tovarId) === String(tovarId)) p.price = price; });
+    });
+  }
+  // ---------------- Товары ----------------
+  // Вкладка «Товары» пульта (отдел 03): остатки по пунктам (общая панель с витриной), карточки товара, приход, новый товар.
+  // Названия (товар, количество, единица, валюта) берутся из настроек отдела 02, не из кода.
+  function demoStop_() {
+    if (!OSTATKI_DEMO) return false;
+    toast("В демо это не сохраняется: попробуйте правку остатков и цены выше");
+    return true;
+  }
+
+  function renderProducts(main) {
+    ostatkiPanelLoad().then(function (d) {
+      if (state.tab !== "products") return;
+      var list = d.gifts;
+      var curSym = currencySym();
+      var panelOpts = { canStock: cubCan("stock_edit"), canPrice: cubCan("products_edit"), savePrice: giftPriceSave };
+
+      main.innerHTML =
+        '<div class="screen-title-row"><div class="screen-title">' + esc(t("pub_item_many")) + '</div>' +
+        '<div class="screen-sub">' + list.length + ' позиций · остатки по пунктам, сохранение при изменении поля</div></div>' +
+
+        ostatkiPanelHTML(d, panelOpts) +
+
+        '<div class="card section-gap"><span class="eyebrow">Карточки: название и фото</span></div>' +
+        '<div class="row-list">' +
+          (list.length
+            ? list.map(function (p) {
+                return '<div class="row-card" data-id="' + esc(p.tovarId) + '">' +
+                  '<div class="row-top"><span class="kv-key">ID ' + esc(p.tovarId) + '</span></div>' +
+                  fieldHTML("Название", inputHTML("name", p.name)) +
+                  fieldHTML("Фото (URL)", inputHTML("image", p.image, 'placeholder="https://…"')) +
+                  fieldHTML("Фото файлом (загрузится на Google Диск)", '<input type="file" accept="image/*" class="imgfile" />') +
+                '</div>';
+              }).join("")
+            : '<div class="empty-state"><span class="eyebrow">Пусто</span><p>' + esc(t("empty_catalog")) + '</p></div>') +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">' + esc(t("pub_receipt_title")) + '</span>' +
+          '<p class="hint-note" style="margin-top:6px;">Себестоимость считается автоматически из приходов и видна в листе Товары</p>' +
+          '<div style="margin-top:12px;" id="receipt-form">' +
+            fieldHTML(esc(t("pub_item_one")), '<select data-f="tovarId">' +
+              list.map(function (p) { return '<option value="' + esc(p.tovarId) + '">' + esc(p.name) + '</option>'; }).join("") +
+            '</select>') +
+            '<div class="grid-2">' +
+              fieldHTML(esc(t("pub_qty_label")), '<input data-f="grams" type="number" step="' + qtyStep() + '" inputmode="decimal" />') +
+              fieldHTML("Цена закупа" + (curSym ? ", " + esc(curSym) : "") + (unitShort() ? "/" + esc(unitShort()) : ""), '<input data-f="costPerGram" type="number" step="any" inputmode="decimal" />') +
+            '</div>' +
+            fieldHTML("Поставщик", '<input data-f="supplier" placeholder="Необязательно" />') +
+            fieldHTML("Комментарий", '<input data-f="note" placeholder="Необязательно" />') +
+            '<button class="btn-primary" id="add-receipt">Провести приход</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Новая позиция: ' + esc(t("pub_item_one")) + '</span>' +
+          '<div style="margin-top:12px;" id="new-product">' +
+            fieldHTML("Название", '<input data-f="name" />') +
+            fieldHTML("Цена" + (curSym ? ", " + esc(curSym) : "") + (unitShort() ? "/" + esc(unitShort()) : ""), '<input data-f="price" type="number" step="any" inputmode="decimal" />') +
+            fieldHTML("Фото (URL)", '<input data-f="image" placeholder="https://…" />') +
+            fieldHTML("Фото файлом (загрузится на Google Диск)", '<input type="file" accept="image/*" id="np-imgfile" />') +
+            '<p class="hint-note">Сколько и где лежит, задаётся выше, в остатках по пунктам, после добавления.</p>' +
+            '<button class="btn-primary" id="add-product">Добавить</button>' +
+          '</div>' +
+        '</div>';
+
+      ostatkiPanelBind(main, d, panelOpts);
+
+      main.querySelectorAll(".row-card[data-id]").forEach(function (card) {
+        card.querySelectorAll("input[data-f]").forEach(function (inp) {
+          inp.addEventListener("change", function () {
+            if (demoStop_()) return;
+            var payload = {
+              id: card.getAttribute("data-id"),
+              name: card.querySelector('[data-f="name"]').value,
+              image: card.querySelector('[data-f="image"]').value
+            };
+            apiPost("upsertProduct", payload)
+              .then(assertOk)
+              .then(function () { toast("Сохранено: " + (payload.name || "позиция")); })
+              .catch(function (e) { toast(errMsg(e)); });
+          });
+        });
+      });
+
+      // Фото файлом: ужать → на Диск → ссылка в поле «Фото (URL)» → автосохранение
+      main.querySelectorAll(".row-card[data-id] .imgfile").forEach(function (inp) {
+        inp.addEventListener("change", function () {
+          if (demoStop_()) return;
+          var card = inp.closest(".row-card");
+          var file = inp.files && inp.files[0];
+          if (!file) return;
+          toast("Загружаем фото…");
+          fileToJpegBase64_(file, 1200, function (b64) {
+            if (!b64) { toast("Не удалось прочитать фото"); return; }
+            apiPost("uploadProductImage", { tovarId: card.getAttribute("data-id"), base64: b64, mimeType: "image/jpeg" })
+              .then(assertOk)
+              .then(function (r) {
+                var imgInput = card.querySelector('[data-f="image"]');
+                imgInput.value = r.url;
+                imgInput.dispatchEvent(new Event("change"));
+              })
+              .catch(function (e) { toast(errMsg(e)); });
+          });
+        });
+      });
+      document.getElementById("np-imgfile").addEventListener("change", function () {
+        if (demoStop_()) return;
+        var file = this.files && this.files[0];
+        if (!file) return;
+        toast("Загружаем фото…");
+        fileToJpegBase64_(file, 1200, function (b64) {
+          if (!b64) { toast("Не удалось прочитать фото"); return; }
+          apiPost("uploadProductImage", { base64: b64, mimeType: "image/jpeg" })
+            .then(assertOk)
+            .then(function (r) {
+              document.querySelector('#new-product [data-f="image"]').value = r.url;
+              toast("Фото загружено: ссылка вставлена, осталось нажать «Добавить»");
+            })
+            .catch(function (e) { toast(errMsg(e)); });
+        });
+      });
+
+      document.getElementById("add-receipt").addEventListener("click", function () {
+        if (demoStop_()) return;
+        var form = document.getElementById("receipt-form");
+        var payload = {
+          tovarId: form.querySelector('[data-f="tovarId"]').value,
+          grams: num(form.querySelector('[data-f="grams"]').value),
+          costPerGram: num(form.querySelector('[data-f="costPerGram"]').value),
+          supplier: form.querySelector('[data-f="supplier"]').value.trim(),
+          note: form.querySelector('[data-f="note"]').value.trim()
+        };
+        if (!payload.tovarId) { toast("Выберите позицию"); return; }
+        if (!(payload.grams > 0)) { toast("Укажите количество прихода"); return; }
+        if (!(payload.costPerGram > 0)) { toast("Укажите цену закупа"); return; }
+        var btn = document.getElementById("add-receipt");
+        btn.disabled = true;
+        apiPost("addReceipt", payload)
+          .then(assertOk)
+          .then(function (res) {
+            toast("Приход проведён: " + fmtQty(res.newStock) + ", себестоимость " + fmtMoney(res.avgCostPerGram));
+            renderTab();
+          })
+          .catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+      });
+
+      document.getElementById("add-product").addEventListener("click", function () {
+        if (demoStop_()) return;
+        var form = document.getElementById("new-product");
+        var payload = {
+          name: form.querySelector('[data-f="name"]').value.trim(),
+          price: num(form.querySelector('[data-f="price"]').value),
+          image: form.querySelector('[data-f="image"]').value.trim()
+        };
+        if (!payload.name) { toast("Укажите название"); return; }
+        var btn = document.getElementById("add-product");
+        btn.disabled = true;
+        apiPost("upsertProduct", payload)
+          .then(assertOk)
+          .then(function () { toast("Добавлено"); renderTab(); })
+          .catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+      });
+    }).catch(function (e) {
+      if (state.tab !== "products") return;
+      main.innerHTML = errorHTML(errMsg(e));
+      toast(errMsg(e));
+    });
+  }
+  // ---------------- Люди: люди, должности, разрешения ----------------
+  // Должность = набор разрешений (список разрешений фиксированный, см. dogovor/RAZRESHENIYA.md).
+  // Должности создаёт и меняет владелец; у человека может быть несколько должностей.
+  var OWNER_ONLY_PERMS = ["people_manage", "positions_manage", "bot_manage", "tasks_manage"];
+  var peopleData_ = null;     // { users, positions } после загрузки
+  var peopleEditId_ = null;   // id должности, которую сейчас правим
+
+  // --- мелкие помощники
+  var TRANSLIT_ = { а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f", х: "h", ц: "c", ч: "ch", ш: "sh", щ: "sch", ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya" };
+  function positionSlug_(name, taken) {
+    var s = String(name).toLowerCase().split("").map(function (c) { return TRANSLIT_[c] != null ? TRANSLIT_[c] : c; }).join("")
+      .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 28) || "dolzhnost";
+    var id = s, n = 2;
+    while (taken.indexOf(id) !== -1) id = s + "_" + (n++);
+    return id;
+  }
+  function chipStyle_(on) {
+    // выбранная: фон-подсветка и рамка акцентом, текст обычный (белый на акценте не читается в тёмной теме)
+    return 'flex:0 0 auto;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid ' +
+      (on ? 'var(--accent)' : 'var(--border)') + ';background:' + (on ? 'var(--accent-soft)' : 'var(--surface)') + ';color:var(--text);font-weight:' + (on ? '700' : '500') +
+      ';' + (on ? 'box-shadow:inset 0 0 0 1px var(--accent);' : '');
+  }
+  function posChipsHTML_(positions, selected) {
+    return '<div class="pos-chips" style="display:flex;flex-wrap:wrap;gap:6px;">' +
+      positions.map(function (p) {
+        var on = selected.indexOf(p.id) !== -1;
+        return '<button type="button" data-pos="' + esc(p.id) + '" data-on="' + (on ? 1 : 0) + '" style="' + chipStyle_(on) + '">' + esc(p.name) + '</button>';
+      }).join("") + '</div>';
+  }
+  function bindChips_(box, onChange) {
+    box.querySelectorAll("[data-pos]").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        var on = chip.getAttribute("data-on") !== "1";
+        chip.setAttribute("data-on", on ? "1" : "0");
+        chip.setAttribute("style", chipStyle_(on));
+        onChange(box);
+      });
+    });
+  }
+  function chosenChips_(box) {
+    return Array.prototype.filter.call(box.querySelectorAll("[data-pos]"), function (c) { return c.getAttribute("data-on") === "1"; })
+      .map(function (c) { return c.getAttribute("data-pos"); });
+  }
+  // кэш списка людей после успешного сохранения, чтобы перерисовка не показывала старое
+  function setCachedUser_(tgid, field, value) {
+    (peopleData_ ? peopleData_.users : []).forEach(function (u) { if (String(u.telegramId) === String(tgid)) u[field] = value; });
+  }
+  function userPositionIds_(u) {
+    if (Array.isArray(u.positions) && u.positions.length) return u.positions.map(function (p) { return p && typeof p === "object" ? p.id : p; });
+    return [LEGACY_TO_POSITION[u.role] || "client"];
+  }
+
+  // --- экран
+  function renderPeople(main) {
+    if (!cubCan("people_view")) { main.innerHTML = errorHTML("Нет доступа к разделу «Люди»"); return; }
+    Promise.all([
+      peopleApi_("getUsers", {}).then(assertOk),
+      peopleApi_("getPositions", {}).then(assertOk)
+    ]).then(function (res) {
+      if (state.tab !== "people") return;
+      peopleData_ = { users: (res[0] && res[0].users) || [], positions: (res[1] && res[1].positions) || [] };
+      drawPeople_(main);
+    }).catch(function (e) {
+      if (state.tab !== "people") return;
+      main.innerHTML = errorHTML(errMsg(e));
+      toast(errMsg(e));
+    });
+  }
+
+  function drawPeople_(main) {
+    var users = peopleData_.users, positions = peopleData_.positions;
+    var canPeople = cubCan("people_manage"), canPos = cubCan("positions_manage");
+    var nameOf = {};
+    positions.forEach(function (p) { nameOf[p.id] = p.name; });
+    var existing = positions.map(function (p) { return p.id; });
+    var templates = POSITION_PRESETS.filter(function (p) { return existing.indexOf(p.id) === -1 && !p.sys; });
+
+    main.innerHTML =
+      '<div class="screen-title-row"><div class="screen-title">Люди</div>' +
+      '<div class="screen-sub">' + users.length + ' человек · ' + positions.length + ' должностей' + (canPeople ? ' · нажмите на должность, чтобы выдать или снять' : '') + '</div></div>' +
+
+      '<div class="row-list">' +
+        (users.length
+          ? users.map(function (u) {
+              var ids = userPositionIds_(u);
+              return '<div class="row-card" data-tgid="' + esc(u.telegramId) + '">' +
+                '<div class="row-top">' +
+                  '<span class="id">ID ' + esc(u.telegramId) + '</span>' +
+                  (u.active === false ? '<span class="pill cancelled"><span class="dot"></span>Неактивен</span>' : '') +
+                '</div>' +
+                fieldHTML("Имя", inputHTML("name", u.name, canPeople ? "" : "disabled")) +
+                '<div class="field" style="margin-bottom:0;"><label>Должности</label>' +
+                  (canPeople ? posChipsHTML_(positions, ids) : '<div>' + esc(ids.map(function (i) { return nameOf[i] || i; }).join(" + ")) + '</div>') +
+                '</div>' +
+              '</div>';
+            }).join("")
+          : '<div class="empty-state"><span class="eyebrow">Пусто</span><p>Пользователей пока нет</p></div>') +
+      '</div>' +
+
+      (canPeople
+        ? '<div class="card section-gap"><span class="eyebrow">Новый человек</span><div style="margin-top:12px;" id="new-user">' +
+            fieldHTML("Telegram ID", '<input data-f="telegramId" type="text" inputmode="numeric" placeholder="Например, 100200300" />') +
+            fieldHTML("Имя", '<input data-f="name" placeholder="Имя" />') +
+            '<div class="field"><label>Должности</label><div id="new-user-pos">' + posChipsHTML_(positions, ["client"]) + '</div></div>' +
+            '<button class="btn-primary" id="add-user">Добавить</button>' +
+          '</div></div>'
+        : '') +
+
+      '<div class="screen-title-row section-gap"><div class="screen-title">Должности</div>' +
+      '<div class="screen-sub">Должность — набор разрешений. Владелец имеет все всегда.</div></div>' +
+      '<div class="row-list">' +
+        positions.map(function (p) {
+          var perms = p.permissions || [];
+          if (peopleEditId_ === p.id) return positionEditorHTML_(p);
+          var count = users.filter(function (u) { return userPositionIds_(u).indexOf(p.id) !== -1; }).length;
+          return '<div class="row-card" data-pid="' + esc(p.id) + '">' +
+            '<div class="row-top"><span class="id">' + esc(p.name) + '</span><span class="date">' + (p.id === "owner" ? "все разрешения" : perms.length + ' из ' + ALL_PERMS.length) + ' · людей: ' + count + '</span></div>' +
+            (p.sub ? '<div style="font-size:12px;color:var(--muted);margin:4px 0 8px;">' + esc(p.sub) + '</div>' : '') +
+            (canPos && p.id !== "owner" ? '<button class="btn-secondary" data-act="pos-edit">Изменить</button>' : '') +
+          '</div>';
+        }).join("") +
+      '</div>' +
+
+      (canPos
+        ? '<div class="card section-gap"><span class="eyebrow">Новая должность</span><div style="margin-top:12px;" id="new-pos">' +
+            fieldHTML("Название", '<input data-f="name" placeholder="Например, Сменный курьер" />') +
+            fieldHTML("Кратко, чем занимается", '<input data-f="sub" placeholder="Можно пусто" />') +
+            fieldHTML("Взять разрешения за основу", '<select data-f="tpl"><option value="">Пустая, отмечу сам</option>' +
+              templates.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join("") +
+              '</select>') +
+            '<button class="btn-primary" id="add-pos">Создать должность</button>' +
+          '</div></div>'
+        : '');
+
+    bindPeople_(main);
+  }
+
+  function positionEditorHTML_(p) {
+    var groups = [];
+    PERMISSIONS.forEach(function (x) { if (groups.indexOf(x[2]) === -1) groups.push(x[2]); });
+    var have = p.permissions || [];
+    return '<div class="card" data-pid="' + esc(p.id) + '" id="pos-editor">' +
+      '<span class="eyebrow">Правка должности</span>' +
+      '<div style="margin-top:12px;">' +
+        fieldHTML("Название", inputHTML("pname", p.name)) +
+        fieldHTML("Кратко, чем занимается", inputHTML("psub", p.sub || "")) +
+        groups.map(function (g) {
+          return '<div class="field" style="margin-bottom:8px;"><label>' + esc(g) + '</label>' +
+            PERMISSIONS.filter(function (x) { return x[2] === g; }).map(function (x) {
+              return '<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text);">' +
+                '<input type="checkbox" data-perm="' + x[0] + '"' + (have.indexOf(x[0]) !== -1 ? " checked" : "") + ' style="margin-top:2px;" />' +
+                '<span>' + esc(x[1]) + (OWNER_ONLY_PERMS.indexOf(x[0]) !== -1 ? ' <span style="color:var(--muted);">· владельческое</span>' : '') + '</span></label>';
+            }).join("") +
+          '</div>';
+        }).join("") +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+          '<button class="btn-primary" data-act="pos-save">Сохранить</button>' +
+          '<button class="btn-secondary" data-act="pos-cancel">Отмена</button>' +
+          (p.system ? '' : '<button class="btn-secondary" data-act="pos-delete" data-armed="0">Удалить</button>') +
+        '</div>' +
+      '</div></div>';
+  }
+
+  function bindPeople_(main) {
+    // имя и должности человека
+    main.querySelectorAll(".row-card[data-tgid]").forEach(function (card) {
+      var tgid = card.getAttribute("data-tgid");
+      var nameEl = card.querySelector('[data-f="name"]');
+      var chips = card.querySelector(".pos-chips");
+      if (nameEl && !nameEl.disabled) {
+        nameEl.addEventListener("change", function () {
+          peopleApi_("createOrUpdateUser", { telegramId: tgid, name: nameEl.value }).then(assertOk)
+            .then(function () { setCachedUser_(tgid, "name", nameEl.value); toast("Сохранено: ID " + tgid); })
+            .catch(function (e) { toast(errMsg(e)); });
+        });
+      }
+      if (chips) bindChips_(chips, function (box) {
+        var chosen = chosenChips_(box);
+        if (!chosen.length) { toast("Нужна хотя бы одна должность"); renderPeople(main); return; }
+        // Должности ставит только владелец, и только отдельным действием: createOrUpdateUser их не принимает
+        peopleApi_("setUserPositions", { telegramId: tgid, positions: chosen }).then(assertOk)
+          .then(function () { setCachedUser_(tgid, "positions", chosen); toast("Должности обновлены"); })
+          .catch(function (e) { toast(errMsg(e)); renderPeople(main); });
+      });
+    });
+
+    var newPos = document.getElementById("new-user-pos");
+    if (newPos) bindChips_(newPos, function () {});
+    var addUser = document.getElementById("add-user");
+    if (addUser) addUser.addEventListener("click", function () {
+      var form = document.getElementById("new-user");
+      var tgid = form.querySelector('[data-f="telegramId"]').value.trim();
+      var name = form.querySelector('[data-f="name"]').value.trim();
+      var chosen = chosenChips_(newPos);
+      if (!tgid) { toast("Укажите Telegram ID"); return; }
+      if (!chosen.length) { toast("Выберите должность"); return; }
+      addUser.disabled = true;
+      peopleApi_("createOrUpdateUser", { telegramId: tgid, name: name }).then(assertOk)
+        .then(function () { return peopleApi_("setUserPositions", { telegramId: tgid, positions: chosen }).then(assertOk); })
+        .then(function () { toast("Человек добавлен"); renderPeople(main); })
+        .catch(function (e) { toast(errMsg(e)); addUser.disabled = false; });
+    });
+
+    // должности
+    main.querySelectorAll('[data-act="pos-edit"]').forEach(function (b) {
+      b.addEventListener("click", function () { peopleEditId_ = b.closest("[data-pid]").getAttribute("data-pid"); drawPeople_(main); });
+    });
+    var editor = document.getElementById("pos-editor");
+    if (editor) {
+      var pid = editor.getAttribute("data-pid");
+      editor.querySelector('[data-act="pos-cancel"]').addEventListener("click", function () { peopleEditId_ = null; drawPeople_(main); });
+      editor.querySelector('[data-act="pos-save"]').addEventListener("click", function () {
+        var perms = Array.prototype.filter.call(editor.querySelectorAll("[data-perm]"), function (c) { return c.checked; }).map(function (c) { return c.getAttribute("data-perm"); });
+        var name = editor.querySelector('[data-f="pname"]').value.trim();
+        if (!name) { toast("Укажите название"); return; }
+        peopleApi_("savePosition", { id: pid, name: name, sub: editor.querySelector('[data-f="psub"]').value.trim(), permissions: perms }).then(assertOk)
+          .then(function () { peopleEditId_ = null; toast("Должность сохранена"); renderPeople(main); })
+          .catch(function (e) { toast(errMsg(e)); });
+      });
+      var del = editor.querySelector('[data-act="pos-delete"]');
+      if (del) del.addEventListener("click", function () {
+        // удаление в два нажатия: случайно не стереть
+        if (del.getAttribute("data-armed") !== "1") { del.setAttribute("data-armed", "1"); del.textContent = "Точно удалить?"; return; }
+        peopleApi_("deletePosition", { id: pid }).then(assertOk)
+          .then(function () { peopleEditId_ = null; toast("Должность удалена"); renderPeople(main); })
+          .catch(function (e) { toast(errMsg(e)); del.setAttribute("data-armed", "0"); del.textContent = "Удалить"; });
+      });
+    }
+    var addPos = document.getElementById("add-pos");
+    if (addPos) addPos.addEventListener("click", function () {
+      var form = document.getElementById("new-pos");
+      var name = form.querySelector('[data-f="name"]').value.trim();
+      if (!name) { toast("Укажите название"); return; }
+      var tpl = PRESET_MAP[form.querySelector('[data-f="tpl"]').value];
+      var id = positionSlug_(name, peopleData_.positions.map(function (p) { return p.id; }));
+      addPos.disabled = true;
+      peopleApi_("savePosition", { id: id, name: name, sub: form.querySelector('[data-f="sub"]').value.trim() || (tpl ? tpl.sub : ""), permissions: tpl ? tpl.perms.slice() : [] }).then(assertOk)
+        .then(function () { peopleEditId_ = id; toast("Должность создана — отметьте разрешения"); renderPeople(main); })
+        .catch(function (e) { toast(errMsg(e)); addPos.disabled = false; });
+    });
+  }
+  // ---------------- Зоны ----------------
+  function renderZones(main) {
+    apiPost("getZones", {}).then(assertOk).then(function (res) {
+      if (state.tab !== "zones") return;
+      var zones = (res && res.zones) || [];
+
+      main.innerHTML =
+        '<div class="screen-title-row"><div class="screen-title">Зоны</div>' +
+        '<div class="screen-sub">' + zones.length + ' зон доставки · имя зоны — ключ</div></div>' +
+
+        '<div class="row-list">' +
+          (zones.length
+            ? zones.map(function (z) {
+                return '<div class="row-card" data-zone="' + esc(z.name) + '">' +
+                  '<div class="row-top"><span class="kv-key">' + esc(z.name) + '</span></div>' +
+                  '<div class="grid-2">' +
+                    fieldHTML("Широта", inputHTML("lat", z.lat, 'type="number" step="any" inputmode="decimal"')) +
+                    fieldHTML("Долгота", inputHTML("lng", z.lng, 'type="number" step="any" inputmode="decimal"')) +
+                  '</div>' +
+                  fieldHTML("Радиус, км", inputHTML("radiusKm", z.radiusKm, 'type="number" step="any" inputmode="decimal"')) +
+                  fieldHTML("Срок доставки (etaText)", inputHTML("etaText", z.etaText, 'placeholder="Например, 1–2 часа"')) +
+                '</div>';
+              }).join("")
+            : '<div class="empty-state"><span class="eyebrow">Пусто</span><p>Зоны ещё не заданы</p></div>') +
+        '</div>' +
+
+        '<div class="card section-gap">' +
+          '<span class="eyebrow">Новая зона</span>' +
+          '<div style="margin-top:12px;" id="new-zone">' +
+            fieldHTML("Название", '<input data-f="name" placeholder="Например, Центр" />') +
+            '<div class="grid-2">' +
+              fieldHTML("Широта", '<input data-f="lat" type="number" step="any" inputmode="decimal" />') +
+              fieldHTML("Долгота", '<input data-f="lng" type="number" step="any" inputmode="decimal" />') +
+            '</div>' +
+            fieldHTML("Радиус, км", '<input data-f="radiusKm" type="number" step="any" inputmode="decimal" />') +
+            fieldHTML("Срок доставки (etaText)", '<input data-f="etaText" placeholder="Например, 1–2 часа" />') +
+            '<button class="btn-primary" id="add-zone">Добавить зону</button>' +
+          '</div>' +
+        '</div>';
+
+      main.querySelectorAll(".row-card[data-zone]").forEach(function (card) {
+        card.querySelectorAll("input[data-f]").forEach(function (inp) {
+          inp.addEventListener("change", function () {
+            var payload = {
+              name: card.getAttribute("data-zone"),
+              lat: num(card.querySelector('[data-f="lat"]').value),
+              lng: num(card.querySelector('[data-f="lng"]').value),
+              radiusKm: num(card.querySelector('[data-f="radiusKm"]').value),
+              etaText: card.querySelector('[data-f="etaText"]').value
+            };
+            apiPost("upsertZone", payload)
+              .then(assertOk)
+              .then(function () { toast("Сохранено: " + payload.name); })
+              .catch(function (e) { toast(errMsg(e)); });
+          });
+        });
+      });
+
+      document.getElementById("add-zone").addEventListener("click", function () {
+        var form = document.getElementById("new-zone");
+        var payload = {
+          name: form.querySelector('[data-f="name"]').value.trim(),
+          lat: num(form.querySelector('[data-f="lat"]').value),
+          lng: num(form.querySelector('[data-f="lng"]').value),
+          radiusKm: num(form.querySelector('[data-f="radiusKm"]').value),
+          etaText: form.querySelector('[data-f="etaText"]').value.trim()
+        };
+        if (!payload.name) { toast("Укажите название зоны"); return; }
+        var btn = document.getElementById("add-zone");
+        btn.disabled = true;
+        apiPost("upsertZone", payload)
+          .then(assertOk)
+          .then(function () { toast("Зона добавлена"); renderTab(); })
+          .catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+      });
+    }).catch(function (e) {
+      if (state.tab !== "zones") return;
+      main.innerHTML = errorHTML(errMsg(e));
+      toast(errMsg(e));
+    });
+  }
+
+  // ---------------- Claude ----------------
+  function taskPill(status) {
+    var s = String(status || "").toLowerCase();
+    var done = s.indexOf("выполнено") !== -1 || s.indexOf("готово") !== -1 || s.indexOf("done") !== -1;
+    var cls = done ? "delivered" : "waiting";
+    var label = status ? esc(status) : "новое";
+    return '<span class="pill ' + cls + '"><span class="dot"></span>' + label + '</span>';
+  }
+
+  function renderClaude(main) {
+    apiPost("getTasks", {})
+      .then(assertOk)
+      .catch(function (e) { return { __err: errMsg(e) }; })
+      .then(function (res) {
+        if (state.tab !== "claude") return;
+        var tasks = res && Array.isArray(res.tasks) ? res.tasks.slice().reverse() : null;
+        var tErr = res && res.__err;
+
+        main.innerHTML =
+          '<div class="screen-title-row"><div class="screen-title">Чат с админом</div>' +
+          '<div class="screen-sub">Задания админу (Claude) по доработке магазина</div></div>' +
+
+          '<div class="card">' +
+            '<span class="eyebrow">Новое задание</span>' +
+            '<div class="field" style="margin-top:12px;"><label>Что изменить?</label>' +
+              '<textarea id="task-text" rows="4" placeholder="Опишите задачу своими словами…"></textarea></div>' +
+            '<button class="btn-primary" id="task-send">Отправить задание</button>' +
+            '<p class="hint-note">Задания читает ассистент Claude в начале каждой рабочей сессии. Срочное — напишите в чат Claude напрямую.</p>' +
+          '</div>' +
+
+          '<div class="section-gap">' +
+            '<div class="screen-title" style="font-size:14px;">История заданий</div>' +
+            '<div class="row-list" style="margin-top:10px;">' +
+              (tasks === null
+                ? errorHTML(tErr || "Не удалось загрузить историю")
+                : (tasks.length
+                    ? tasks.map(function (t) {
+                        var isNew = String(t.status || "новое").toLowerCase() === "новое";
+                        return '<div class="row-card">' +
+                          '<div class="row-top"><span class="date">' + esc(fmtDate(t.date)) + '</span>' + taskPill(t.status) + '</div>' +
+                          '<div class="task-text">' + esc(t.text) + '</div>' +
+                          (isNew && t.row
+                            ? '<div class="row-actions" style="margin-top:8px;"><button class="act-btn" data-act="task-done" data-row="' + esc(t.row) + '">Отметить выполненным</button></div>'
+                            : '') +
+                        '</div>';
+                      }).join("")
+                    : '<div class="empty-state"><span class="eyebrow">Пусто</span><p>Заданий пока нет</p></div>')) +
+            '</div>' +
+          '</div>';
+
+        if (tErr) toast(tErr);
+
+        document.getElementById("task-send").addEventListener("click", function () {
+          var ta = document.getElementById("task-text");
+          var text = ta.value.trim();
+          if (!text) { toast("Опишите задачу"); return; }
+          var btn = document.getElementById("task-send");
+          btn.disabled = true;
+          btn.textContent = "Отправляем…";
+          apiPost("addTask", { from: state.cubId, text: text })
+            .then(assertOk)
+            .then(function () {
+              toast("Задание записано — Claude выполнит в ближайшей сессии");
+              renderTab();
+            })
+            .catch(function (e) {
+              toast(errMsg(e));
+              btn.disabled = false;
+              btn.textContent = "Отправить задание";
+            });
+        });
+
+        main.querySelectorAll("[data-act=task-done]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            btn.disabled = true;
+            apiPost("setTaskStatus", { row: btn.getAttribute("data-row"), status: "выполнено" })
+              .then(assertOk)
+              .then(function () { toast("Задание закрыто"); renderTab(); })
+              .catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+          });
+        });
+      });
+  }
+
+  // Пункты выдачи (отдел 07): данные, демо-набор, связь с сервером и помощники для других отделов.
+  // Общий блок обеих страниц (витрина и ЦУБ). Контракт данных: otdely/MVP-1.md, лист «Пункты».
+  // Для других отделов (синхронно, после loadPunkty()): punktPoId(id), punktyList(), geometkaVPunkte(id, lat, lng),
+  // punktyPoUdalennosti(lat, lng). Сервер: server/07-punkty.gs (punktPoId, geometkaVPunkte_).
+  var PUNKTY_DEMO_KEY = "kurier_demo_punkty";
+  var PUNKT_RADIUS_M = 150;            // допуск «геометка у пункта», м (как на сервере; ключ punkt_radius_m в «Тексты»)
+  var PUNKTY_DEMO = /[?&]demo=1/.test(location.search);
+  var PUNKTY_NHA_TRANG = [12.2388, 109.1967];
+
+  // Демо: вымышленные места в Нячанге (магазин, кафе, постамат, прачечная); работает с ?demo=1 без сервера
+  function demoPunkty() {
+    function ph(label, c1, c2) {
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320"><rect width="480" height="320" fill="' + c1 + '"/>' +
+        '<rect x="60" y="120" width="360" height="150" fill="' + c2 + '"/><rect x="60" y="90" width="360" height="40" fill="#222"/>' +
+        '<text x="240" y="118" fill="#fff" font-family="sans-serif" font-size="22" text-anchor="middle">' + label + '</text>' +
+        '<rect x="210" y="170" width="60" height="100" fill="#fff" opacity="0.8"/></svg>';
+      return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    }
+    return [
+      { id: "P-DEMO-1", nazvanie: "Магазин «Лотос»", adres: "Нячанг, ул. Чан Фу, 28", lat: 12.2431, lng: 109.1962, foto: ph("Lotus Mart", "#cfd8dc", "#90a4ae"),
+        hozyain_imya: "Линь Нгуен", hozyain_telefon: "+84 90 000 11 22", chasy: "08:00–22:00", aktiven: true, sozdal: "demo", sozdan: "2026-11-22T08:00:00Z" },
+      { id: "P-DEMO-2", nazvanie: "Кафе «Бамбук»", adres: "Нячанг, ул. Хунг Выонг, 5", lat: 12.2379, lng: 109.1960, foto: ph("Bamboo Cafe", "#dcedc8", "#9ccc65"),
+        hozyain_imya: "Май Чан", hozyain_telefon: "+84 91 000 33 44", chasy: "07:00–21:00", aktiven: true, sozdal: "demo", sozdan: "2026-11-22T08:05:00Z" },
+      { id: "P-DEMO-3", nazvanie: "Постамат «Север»", adres: "Нячанг, ул. Нгуен Тхиен Туат, 61 (у входа в мини-маркет)", lat: 12.2513, lng: 109.1922, foto: ph("Postamat", "#e1bee7", "#ba68c8"),
+        hozyain_imya: "Дык Ле", hozyain_telefon: "+84 92 000 55 66", chasy: "круглосуточно", aktiven: true, sozdal: "demo", sozdan: "2026-11-22T08:10:00Z" },
+      { id: "P-DEMO-4", nazvanie: "Прачечная «Волна»", adres: "Нячанг, ул. Ле Тхань Тон, 14", lat: 12.2347, lng: 109.1986, foto: ph("Wave Laundry", "#b3e5fc", "#4fc3f7"),
+        hozyain_imya: "Хоа Фам", hozyain_telefon: "+84 93 000 77 88", chasy: "09:00–19:00", aktiven: false, sozdal: "demo", sozdan: "2026-11-22T08:15:00Z" }
+    ];
+  }
+
+  // ---- хранилище демо-режима (localStorage) и кэш последних загруженных пунктов ----
+  function punktyDemoRead_() {
+    try {
+      var raw = localStorage.getItem(PUNKTY_DEMO_KEY);
+      var list = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(list)) return list;
+    } catch (e) {}
+    return demoPunkty();
+  }
+  function punktyDemoWrite_(list) {
+    try { localStorage.setItem(PUNKTY_DEMO_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  function punktyCache_() { return state.punkty || (state.punkty = []); }
+
+  // Список для других отделов: то, что загрузил loadPunkty (клиенту только активные)
+  function punktyList() { return punktyCache_().slice(); }
+  // Пункт по id или null. Телефон хозяина есть только у тех, кто загрузил getPunktyAll
+  function punktPoId(id) {
+    var list = punktyCache_();
+    for (var i = 0; i < list.length; i++) if (String(list[i].id) === String(id)) return list[i];
+    return null;
+  }
+
+  // Загрузка: all=true -> все пункты, включая выключенные, с телефоном (нужно points_edit); иначе активные без телефона
+  function loadPunkty(all) {
+    var fromList = function (list) {
+      list = list.map(function (p) {
+        var q = {}; for (var k in p) q[k] = p[k];
+        q.lat = Number(q.lat); q.lng = Number(q.lng);
+        if (!all) { delete q.hozyain_telefon; delete q.sozdal; delete q.sozdan; }
+        return q;
+      }).filter(function (p) { return all || p.aktiven !== false; });
+      state.punkty = list;
+      return list;
+    };
+    if (PUNKTY_DEMO) return Promise.resolve(fromList(punktyDemoRead_()));
+    return apiPost(all ? "getPunktyAll" : "getPunkty", {})
+      .then(assertOk)
+      .then(function (res) {
+        if (!res || !Array.isArray(res.punkty)) throw new Error("bad shape");
+        state.punkty = res.punkty.map(function (p) { p.lat = Number(p.lat); p.lng = Number(p.lng); return p; });
+        return state.punkty;
+      });
+  }
+
+  // Те же проверки, что на сервере (validatePunkt_): пункт только с адресом, точкой и живым хозяином
+  function punktValidate(d) {
+    if (!String(d.nazvanie || "").trim()) return "Укажите название пункта";
+    var lat = Number(d.lat), lng = Number(d.lng);
+    if (d.lat === "" || d.lat == null || d.lng === "" || d.lng == null || !isFinite(lat) || !isFinite(lng)) return "Поставьте точку на карте";
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return "Координаты вне карты";
+    if (!String(d.adres || "").trim()) return "Укажите адрес";
+    if (!String(d.hozyain_imya || "").trim()) return "Укажите, кто хозяин места (имя)";
+    if (String(d.hozyain_telefon || "").replace(/\D/g, "").length < 7) return "Укажите телефон хозяина места";
+    return "";
+  }
+
+  // Сохранить пункт (создать без id, обновить с id). Возвращает Promise<пункт>.
+  function punktSave(d) {
+    var err = punktValidate(d);
+    if (err) return Promise.reject(new Error(err));
+    if (PUNKTY_DEMO) {
+      var list = punktyDemoRead_(), saved = null;
+      var base = {
+        nazvanie: String(d.nazvanie).trim(), adres: String(d.adres).trim(), lat: Number(d.lat), lng: Number(d.lng),
+        hozyain_imya: String(d.hozyain_imya).trim(), hozyain_telefon: String(d.hozyain_telefon).trim(),
+        chasy: String(d.chasy || "").trim(), aktiven: d.aktiven !== false
+      };
+      if (d.id) {
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].id === d.id) {
+            for (var k in base) list[i][k] = base[k];
+            if (d.foto != null) list[i].foto = d.foto;
+            saved = list[i];
+          }
+        }
+        if (!saved) return Promise.reject(new Error("Пункт не найден"));
+      } else {
+        saved = base;
+        saved.id = "P-" + Date.now().toString(36).toUpperCase();
+        saved.foto = d.foto || "";
+        saved.sozdal = state.telegramId || "demo";
+        saved.sozdan = new Date().toISOString();
+        list.push(saved);
+      }
+      punktyDemoWrite_(list);
+      return Promise.resolve(saved);
+    }
+    return apiPost("upsertPunkt", d).then(assertOk).then(function (res) { return res.punkt; });
+  }
+
+  // Фото места: в демо кладётся прямо в пункт (data-адрес), на сервере уходит в Drive. Promise<url>
+  function punktUploadFoto(id, foto) {
+    if (PUNKTY_DEMO) {
+      var list = punktyDemoRead_();
+      for (var i = 0; i < list.length; i++) if (list[i].id === id) list[i].foto = foto.dataUrl;
+      punktyDemoWrite_(list);
+      return Promise.resolve(foto.dataUrl);
+    }
+    return apiPost("uploadPunktFoto", { id: id, base64: foto.base64, mimeType: "image/jpeg" }).then(assertOk).then(function (res) { return res.url; });
+  }
+
+  // Файл из камеры или галереи -> JPEG до 900 px: { dataUrl, base64 }
+  function punktFotoFromFile(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error("Не удалось прочитать фото")); };
+      reader.onload = function () {
+        var img = new Image();
+        img.onerror = function () { reject(new Error("Это не картинка")); };
+        img.onload = function () {
+          var max = 900, w = img.width, h = img.height, k = Math.min(1, max / Math.max(w, h));
+          var c = document.createElement("canvas");
+          c.width = Math.round(w * k); c.height = Math.round(h * k);
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          var url = c.toDataURL("image/jpeg", 0.75);
+          resolve({ dataUrl: url, base64: url.split(",")[1] });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ---- расстояния и проверка геометки (для отдела 08, «ближайший пункт» для отдела 04) ----
+  function punktDistanceM(p, lat, lng) {
+    if (!p || lat == null || lng == null || lat === "" || lng === "") return null;
+    lat = Number(lat); lng = Number(lng);
+    if (!isFinite(lat) || !isFinite(lng)) return null;
+    var R = 6371000, rad = Math.PI / 180;
+    var dLat = (Number(p.lat) - lat) * rad, dLng = (Number(p.lng) - lng) * rad;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat * rad) * Math.cos(Number(p.lat) * rad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  // Геометка в радиусе пункта? Возвращает { ok, distanceM, radiusM }. Проверку дублирует сервер (geometkaVPunkte_).
+  function geometkaVPunkte(id, lat, lng, radiusM) {
+    var r = Number(radiusM) > 0 ? Number(radiusM) : PUNKT_RADIUS_M;
+    var d = punktDistanceM(punktPoId(id), lat, lng);
+    if (d == null) return { ok: false, distanceM: null, radiusM: r };
+    return { ok: d <= r, distanceM: Math.round(d), radiusM: r };
+  }
+  // Пункты по удалённости от точки (ближайший первым): [{ punkt, distanceM }]
+  function punktyPoUdalennosti(lat, lng) {
+    return punktyCache_().map(function (p) { return { punkt: p, distanceM: punktDistanceM(p, lat, lng) }; })
+      .filter(function (x) { return x.distanceM != null; })
+      .sort(function (a, b) { return a.distanceM - b.distanceM; });
+  }
+  // Пункты выдачи (отдел 07): экран картографа. Общий для витрины («Пункты») и ЦУБа («Пункты»).
+  // Карта Leaflet/OSM подключена в скелете витрины; в скелете ЦУБа её нет (обращение отделу 10),
+  // поэтому там точка задаётся числами, а карта появится сама, когда Leaflet подключат.
+  function renderPunktyEditor(main, tabId) {
+    var ed = null;   // правка: { id, nazvanie, adres, chasy, hozyain_imya, hozyain_telefon, lat, lng, foto, fotoNew }
+    var busy = false;
+
+    function mapOn() { return typeof L !== "undefined" && !!document.getElementById("punkty-map"); }
+    function killMap() { if (window.__punktyMap) { try { window.__punktyMap.remove(); } catch (e) {} window.__punktyMap = null; } }
+    function alive() { return state.tab === tabId && document.body.contains(main); }
+
+    function fieldRow(label, inner) { return '<div class="field"><label>' + label + '</label>' + inner + '</div>'; }
+    function inp(f, v, attrs) { return '<input data-pf="' + f + '" value="' + esc(v == null ? "" : v) + '" ' + (attrs || "") + ' />'; }
+
+    function load() {
+      loadPunkty(true).then(function (list) { if (alive()) draw(list); })
+        .catch(function (e) { if (alive()) main.innerHTML = '<div class="empty-state"><span class="eyebrow">Ошибка</span><p>' + esc(e && e.message ? e.message : "Не удалось загрузить пункты") + '</p></div>'; });
+    }
+
+    function mapLink(p) { return "https://www.openstreetmap.org/?mlat=" + p.lat + "&mlon=" + p.lng + "#map=18/" + p.lat + "/" + p.lng; }
+
+    function draw(list) {
+      killMap();
+      var cur = ed || { id: "", nazvanie: "", adres: "", chasy: "", hozyain_imya: "", hozyain_telefon: "", lat: "", lng: "", foto: "" };
+      var active = list.filter(function (p) { return p.aktiven !== false; }).length;
+      var shownFoto = cur.fotoNew ? cur.fotoNew.dataUrl : cur.foto;
+      main.innerHTML =
+        '<div class="screen-title-row"><div class="screen-title">Пункты выдачи</div>' +
+        '<div class="screen-sub">' + active + ' активных · ' + (list.length - active) + ' выключено · известные места с живым хозяином</div></div>' +
+
+        '<div class="card" style="margin-bottom:16px;">' +
+          '<span class="eyebrow">' + (cur.id ? "Правка пункта" : "Новый пункт") + '</span>' +
+          '<div style="margin-top:12px;">' +
+            '<div id="punkty-map" style="height:260px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;isolation:isolate;display:' + (typeof L !== "undefined" ? "block" : "none") + ';"></div>' +
+            '<div class="row-actions" style="margin-bottom:12px;"><button class="act-btn" id="pf-here" type="button">Я на месте: взять мою геопозицию</button>' +
+              '<span class="screen-sub" id="pf-hint" style="margin:0;">' + (typeof L !== "undefined" ? "Нажмите на карту или перетащите метку" : "Карта недоступна: введите широту и долготу") + '</span></div>' +
+            '<div class="grid-2">' + fieldRow("Широта", inp("lat", cur.lat, 'type="number" step="any" inputmode="decimal"')) +
+              fieldRow("Долгота", inp("lng", cur.lng, 'type="number" step="any" inputmode="decimal"')) + '</div>' +
+            fieldRow("Название места", inp("nazvanie", cur.nazvanie, 'placeholder="Например, Магазин «Лотос»"')) +
+            fieldRow("Адрес", inp("adres", cur.adres, 'placeholder="Улица, дом, как найти вход"')) +
+            fieldRow("Часы работы", inp("chasy", cur.chasy, 'placeholder="08:00–22:00"')) +
+            '<div class="grid-2">' + fieldRow("Хозяин места (имя)", inp("hozyain_imya", cur.hozyain_imya)) +
+              fieldRow("Телефон хозяина", inp("hozyain_telefon", cur.hozyain_telefon, 'type="tel" inputmode="tel" placeholder="+84…"')) + '</div>' +
+            fieldRow("Фото места", '<input type="file" id="pf-file" accept="image/*" />' +
+              (shownFoto ? '<img id="pf-preview" src="' + esc(shownFoto) + '" alt="Фото места" style="margin-top:8px;max-width:100%;max-height:180px;border-radius:var(--radius-sm);border:1px solid var(--border);" />' : "")) +
+            '<div class="row-actions"><button class="btn-primary" id="pf-save" type="button">' + (cur.id ? "Сохранить изменения" : "Добавить пункт") + '</button>' +
+              (cur.id ? '<button class="act-btn" id="pf-cancel" type="button">Отмена</button>' : "") + '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="row-list">' +
+          (list.length ? list.map(function (p) {
+            var on = p.aktiven !== false;
+            return '<div class="row-card" data-id="' + esc(p.id) + '">' +
+              '<div class="row-top"><span class="id" style="font-size:14px;">' + esc(p.nazvanie) + '</span>' +
+                '<span class="pill ' + (on ? "delivered" : "cancelled") + '"><span class="dot"></span>' + (on ? "Активен" : "Выключен") + '</span></div>' +
+              (p.foto ? '<img src="' + esc(p.foto) + '" alt="" style="width:100%;max-height:150px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);" />' : "") +
+              '<div class="row-sum"><span class="addr" style="white-space:normal;">' + esc(p.adres) + '</span></div>' +
+              '<div class="screen-sub" style="margin:0;">' + esc(p.chasy || "часы не указаны") + ' · ' + esc(p.hozyain_imya) + (p.hozyain_telefon ? ' · <a href="tel:' + esc(String(p.hozyain_telefon).replace(/[^\d+]/g, "")) + '">' + esc(p.hozyain_telefon) + '</a>' : '') + '</div>' +
+              '<div class="row-actions"><button class="act-btn" data-act="edit">Править</button>' +
+                '<button class="act-btn' + (on ? " danger" : "") + '" data-act="toggle">' + (on ? "Выключить" : "Включить") + '</button>' +
+                '<a class="act-btn" style="text-decoration:none;" href="' + esc(mapLink(p)) + '" target="_blank" rel="noopener">Маршрут</a></div>' +
+            '</div>';
+          }).join("") : '<div class="empty-state"><span class="eyebrow">Пусто</span><p>Пунктов пока нет: поставьте первый на карте</p></div>') +
+        '</div>';
+
+      bindForm(list);
+      if (mapOn()) buildMap(list, cur);
+
+      main.querySelectorAll(".row-card[data-id]").forEach(function (card) {
+        var id = card.getAttribute("data-id");
+        var p = list.filter(function (x) { return x.id === id; })[0];
+        card.querySelector('[data-act="edit"]').addEventListener("click", function () {
+          ed = { id: p.id, nazvanie: p.nazvanie, adres: p.adres, chasy: p.chasy, hozyain_imya: p.hozyain_imya, hozyain_telefon: p.hozyain_telefon, lat: p.lat, lng: p.lng, foto: p.foto };
+          draw(list);
+          window.scrollTo(0, 0);
+        });
+        card.querySelector('[data-act="toggle"]').addEventListener("click", function () {
+          var next = p.aktiven === false;
+          var d = { id: p.id, nazvanie: p.nazvanie, adres: p.adres, lat: p.lat, lng: p.lng, chasy: p.chasy, hozyain_imya: p.hozyain_imya, hozyain_telefon: p.hozyain_telefon, aktiven: next };
+          punktSave(d).then(function () { toast(next ? "Пункт включён" : "Пункт выключен"); load(); })
+            .catch(function (e) { toast(e && e.message ? e.message : "Не удалось сохранить"); });
+        });
+      });
+    }
+
+    function readForm() {
+      var v = {};
+      main.querySelectorAll("[data-pf]").forEach(function (i) { v[i.getAttribute("data-pf")] = i.value; });
+      return v;
+    }
+    // Значения полей запоминаем в ed, чтобы перерисовка (смена точки) их не стирала
+    function keep() {
+      var v = readForm();
+      ed = ed || { id: "", foto: "" };
+      ["nazvanie", "adres", "chasy", "hozyain_imya", "hozyain_telefon"].forEach(function (k) { ed[k] = v[k]; });
+      ed.lat = v.lat; ed.lng = v.lng;
+    }
+
+    function setPoint(lat, lng) {
+      var la = main.querySelector('[data-pf="lat"]'), lo = main.querySelector('[data-pf="lng"]');
+      if (la) la.value = Number(lat).toFixed(6);
+      if (lo) lo.value = Number(lng).toFixed(6);
+      var mk = window.__punktyMap && window.__punktyMap.__mk;
+      if (mk) mk.setLatLng([lat, lng]);
+    }
+
+    function bindForm(list) {
+      var la = main.querySelector('[data-pf="lat"]'), lo = main.querySelector('[data-pf="lng"]');
+      function fromInputs() {
+        var a = parseFloat(la.value), b = parseFloat(lo.value);
+        if (isFinite(a) && isFinite(b) && window.__punktyMap && window.__punktyMap.__mk) {
+          window.__punktyMap.__mk.setLatLng([a, b]); window.__punktyMap.setView([a, b]);
+        }
+      }
+      la.addEventListener("change", fromInputs); lo.addEventListener("change", fromInputs);
+
+      document.getElementById("pf-here").addEventListener("click", function () {
+        if (!navigator.geolocation) { toast("Геопозиция недоступна на этом устройстве"); return; }
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          setPoint(pos.coords.latitude, pos.coords.longitude);
+          if (window.__punktyMap) window.__punktyMap.setView([pos.coords.latitude, pos.coords.longitude], 17);
+          toast("Точка поставлена по вашей геопозиции");
+        }, function () { toast("Не удалось определить место: разрешите доступ к геопозиции или нажмите на карту"); }, { enableHighAccuracy: true, timeout: 10000 });
+      });
+
+      document.getElementById("pf-file").addEventListener("change", function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f) return;
+        punktFotoFromFile(f).then(function (foto) {
+          keep(); ed.fotoNew = foto; draw(list);
+        }).catch(function (err) { toast(err && err.message ? err.message : "Фото не принято"); });
+      });
+
+      var cancel = document.getElementById("pf-cancel");
+      if (cancel) cancel.addEventListener("click", function () { ed = null; draw(list); });
+
+      document.getElementById("pf-save").addEventListener("click", function () {
+        if (busy) return;
+        keep();
+        var d = { id: ed.id || undefined, nazvanie: ed.nazvanie, adres: ed.adres, lat: ed.lat, lng: ed.lng, chasy: ed.chasy, hozyain_imya: ed.hozyain_imya, hozyain_telefon: ed.hozyain_telefon, aktiven: true };
+        if (ed.id) { var old = list.filter(function (x) { return x.id === ed.id; })[0]; if (old) d.aktiven = old.aktiven !== false; }
+        var err = punktValidate(d);
+        if (err) { toast(err); return; }
+        busy = true;
+        var btn = document.getElementById("pf-save"); btn.disabled = true; btn.textContent = "Сохраняем…";
+        var fotoNew = ed.fotoNew;
+        punktSave(d).then(function (p) {
+          return fotoNew ? punktUploadFoto(p.id, fotoNew) : null;
+        }).then(function () {
+          toast(ed.id ? "Пункт сохранён" : "Пункт добавлен");
+          ed = null; busy = false; load();
+        }).catch(function (e) {
+          busy = false; btn.disabled = false; btn.textContent = ed.id ? "Сохранить изменения" : "Добавить пункт";
+          toast(e && e.message ? e.message : "Не удалось сохранить");
+        });
+      });
+    }
+
+    function buildMap(list, cur) {
+      var hasPt = isFinite(parseFloat(cur.lat)) && isFinite(parseFloat(cur.lng));
+      var c = hasPt ? [parseFloat(cur.lat), parseFloat(cur.lng)] : (list[0] ? [list[0].lat, list[0].lng] : PUNKTY_NHA_TRANG);
+      var map = L.map("punkty-map").setView(c, hasPt ? 17 : 14);
+      window.__punktyMap = map;
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(map);
+      list.forEach(function (p) {
+        if (p.id === cur.id) return;
+        // серые кружки: уже стоящие пункты (метка = радиус допуска курьера)
+        L.circle([p.lat, p.lng], { radius: PUNKT_RADIUS_M, color: p.aktiven === false ? "#9aa0a6" : "#5b6472", weight: 1, fillOpacity: 0.12 })
+          .bindTooltip(esc(p.nazvanie)).addTo(map);
+      });
+      var mk = L.marker(c, { draggable: true, opacity: hasPt ? 1 : 0.6 }).addTo(map);
+      map.__mk = mk;
+      mk.on("dragend", function () { var ll = mk.getLatLng(); setPoint(ll.lat, ll.lng); mk.setOpacity(1); });
+      map.on("click", function (e) { setPoint(e.latlng.lat, e.latlng.lng); mk.setOpacity(1); });
+      setTimeout(function () { if (window.__punktyMap === map) map.invalidateSize(); }, 60);
+    }
+
+    load();
+  }
+  // ---------------- Пункты выдачи (пульт владельца, рядом с зонами) ----------------
+  // Вся работа в общем редакторе otdely/07-punkty-zony-marshrut/obshchee/punkty-redaktor.js
+  function renderPunktyCub(main) {
+    renderPunktyEditor(main, "points");
+  }
+  // Завоз на пункт (отдел 08): данные, демо и связь с сервером. Общий блок обеих страниц (витрина и пульт).
+  // Контракт: dogovor/08-zavoz.md, лист «Завозы». Сервер сам проверяет расстояние до пункта и ставит время.
+  // Демо (?demo=1): всё идёт без сервера, завоз проверяется той же геометкой (geometkaVPunkte, отдел 07),
+  // товар добавляется на пункт через ostatkiDemoPrihod (отдел 03), записи лежат в localStorage.
+  var ZAVOZ_DEMO = /[?&]demo=1/.test(location.search);
+  var ZAVOZ_DEMO_KEY = "kurier_demo_zavozy";
+
+  function zavozLocalDay(v) {
+    var d = v instanceof Date ? v : new Date(v);
+    if (isNaN(d.getTime())) return "";
+    function p(n) { return (n < 10 ? "0" : "") + n; }
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  // Кто курьер в этом окне: свой Telegram id, в демо без id — «demo»
+  function zavozKurierId() { return state.telegramId ? String(state.telegramId) : "demo"; }
+
+  // Демо-история на сегодня (два завоза «Демо-курьера»), чтобы владелец сразу видел маршрут и карту
+  function zavozDemoSeed_() {
+    function at(h, m) { var d = new Date(); d.setHours(h, m, 0, 0); return d.toISOString(); }
+    var ph = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160"><rect width="240" height="160" fill="#cfd8dc"/><text x="120" y="88" font-size="18" text-anchor="middle" fill="#455a64" font-family="sans-serif">фото завоза</text></svg>');
+    return [
+      { id: "Z-DEMO-1", vremya: at(9, 10), kurier_id: "D-SEED", kurier_imya: "Демо-курьер", punkt_id: "P-DEMO-1", punkt_nazvanie: "Магазин «Лотос»",
+        tovary: [{ tovarId: "1", nazvanie: "Чайный набор в коробке", kolichestvo: 5 }, { tovarId: "5", nazvanie: "Открытки ручной работы", kolichestvo: 10 }],
+        foto: ph, lat: 12.2432, lng: 109.1963, rasstoyanie_m: 14, dopusk_m: 150, status: "prinyat", prichina: "", punkt_lat: 12.2431, punkt_lng: 109.1962 },
+      { id: "Z-DEMO-2", vremya: at(10, 25), kurier_id: "D-SEED", kurier_imya: "Демо-курьер", punkt_id: "P-DEMO-2", punkt_nazvanie: "Кафе «Бамбук»",
+        tovary: [{ tovarId: "3", nazvanie: "Кружка с гравировкой", kolichestvo: 2 }],
+        foto: ph, lat: 12.2380, lng: 109.1961, rasstoyanie_m: 14, dopusk_m: 150, status: "prinyat", prichina: "", punkt_lat: 12.2379, punkt_lng: 109.1960 }
+    ];
+  }
+  function zavozDemoRead_() {
+    try {
+      var raw = localStorage.getItem(ZAVOZ_DEMO_KEY);
+      var list = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(list)) return list;
+    } catch (e) {}
+    var seed = zavozDemoSeed_();
+    zavozDemoWrite_(seed);
+    return seed;
+  }
+  function zavozDemoWrite_(list) {
+    try { localStorage.setItem(ZAVOZ_DEMO_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  // Товары для формы завоза. Promise<[{tovarId, name}]>. Курьеру каталог закрыт, поэтому свой список имён с сервера.
+  function zavozTovary() {
+    if (ZAVOZ_DEMO) {
+      if (typeof giftsLoad === "function") return giftsLoad().then(function (l) { return (l || []).map(function (g) { return { tovarId: g.tovarId, name: g.name }; }); });
+      return Promise.resolve([]);
+    }
+    return apiPost("getZavozTovary", {}).then(assertOk).then(function (res) {
+      return ((res && res.data) || []).map(function (t) { return { tovarId: t.id, name: t.name }; });
+    });
+  }
+
+  // Отправить завоз. d = {punkt_id, items:[{tovarId, kolichestvo}], foto:{base64, dataUrl}, lat, lng}.
+  // Promise<ответ>; отказ бросает Error с понятным текстом (e.otkaz = true, если далеко от пункта).
+  function zavozSend(d) {
+    if (!ZAVOZ_DEMO) {
+      return apiPost("zavozNaPunkt", {
+        telegramId: state.telegramId, punkt_id: d.punkt_id, items: d.items,
+        foto: { base64: d.foto.base64, mimeType: "image/jpeg" }, lat: d.lat, lng: d.lng
+      }).then(function (res) {
+        if (res && res.success === false) { var e = new Error(res.error || "Завоз не принят"); e.otkaz = !!res.otkaz; throw e; }
+        return res;
+      });
+    }
+    return Promise.resolve().then(function () {
+      var p = punktPoId(d.punkt_id);
+      if (!p || p.aktiven === false) throw new Error("Пункт не найден или выключен");
+      if (!d.items || !d.items.length) throw new Error("Отметьте, какие товары привезли и сколько");
+      if (!d.foto) throw new Error("Сделайте фото места: без фото завоз не принимается");
+      if (d.lat == null || d.lng == null) throw new Error("Нет геометки: нажмите «Я у пункта» (в демо) или разрешите геопозицию");
+      var geo = geometkaVPunkte(d.punkt_id, d.lat, d.lng);
+      var list = zavozDemoRead_();
+      var names = {};
+      (state.zavozTovary || []).forEach(function (t) { names[String(t.tovarId)] = t.name; });
+      var rec = {
+        id: "Z-" + Date.now().toString(36).toUpperCase(), vremya: new Date().toISOString(), kurier_id: zavozKurierId(), kurier_imya: "Вы",
+        punkt_id: p.id, punkt_nazvanie: p.nazvanie,
+        tovary: d.items.map(function (i) { return { tovarId: String(i.tovarId), nazvanie: names[String(i.tovarId)] || ("товар " + i.tovarId), kolichestvo: Number(i.kolichestvo) }; }),
+        foto: d.foto.dataUrl || "", lat: Number(d.lat), lng: Number(d.lng), rasstoyanie_m: geo.distanceM, dopusk_m: geo.radiusM, status: "", prichina: "",
+        punkt_lat: p.lat, punkt_lng: p.lng
+      };
+      if (!geo.ok) {
+        rec.status = "otkaz";
+        rec.prichina = "Вы далеко от пункта «" + p.nazvanie + "»: примерно " + geo.distanceM + " м, а нужно не дальше " + geo.radiusM + " м. Подойдите к самому месту и повторите.";
+        list.push(rec); zavozDemoWrite_(list);
+        var e = new Error(rec.prichina); e.otkaz = true; throw e;
+      }
+      var go = function () {
+        var res = ostatkiDemoPrihod(d.items, p.id);
+        if (!res || res.success === false) {
+          rec.status = "oshibka"; rec.prichina = (res && res.error) || "склад отказал";
+          list.push(rec); zavozDemoWrite_(list);
+          throw new Error(rec.prichina);
+        }
+        rec.status = "prinyat";
+        list.push(rec); zavozDemoWrite_(list);
+        return { success: true, id: rec.id, vremya: rec.vremya, punkt: p.nazvanie, rasstoyanie_m: geo.distanceM };
+      };
+      // демо-остатки привязаны к списку пунктов (отдел 03): подгружаем его, прежде чем добавлять
+      return (typeof ostatkiPunkty === "function" ? ostatkiPunkty() : Promise.resolve()).then(go);
+    });
+  }
+
+  // Завозы дня. day «гггг-мм-дд», kurierId пусто = все курьеры (владелец). Promise<{date, zavozy:[…]}>, по времени
+  function marshrutLoad(day, kurierId) {
+    if (ZAVOZ_DEMO) {
+      var list = zavozDemoRead_().filter(function (r) {
+        return zavozLocalDay(r.vremya) === day && (!kurierId || String(r.kurier_id) === String(kurierId));
+      }).sort(function (a, b) { return new Date(a.vremya).getTime() - new Date(b.vremya).getTime(); });
+      return Promise.resolve({ date: day, zavozy: list });
+    }
+    var body = { date: day };
+    if (kurierId) body.telegramId = kurierId;
+    return apiPost("getMarshrut", body).then(assertOk);
+  }
+  // Маршрут курьера за день (отдел 06): список завозов по времени и точки на карте.
+  // Общий блок обеих страниц: курьер видит свои завозы в витрине, владелец всех курьеров в пульте («Завозы»).
+  // Данные: marshrutLoad (отдел 08, getMarshrut). Карта Leaflet подключена в скелетах обеих страниц.
+  // opts: { kurierId: "" (все) или id, who: показывать имя курьера, canPhoto: показывать ссылку на фото, tabId: вкладка }
+  function renderMarshrutDnya(box, opts) {
+    opts = opts || {};
+    var day = opts.day || zavozLocalDay(new Date());
+    var mapEl = "mr-map-" + Math.floor(Math.random() * 1e6);
+    function alive() { return state.tab === opts.tabId && document.body.contains(box); }
+    function killMap() { if (box.__mrMap) { try { box.__mrMap.remove(); } catch (e) {} box.__mrMap = null; } }
+
+    function hm(v) {
+      var d = new Date(v);
+      if (isNaN(d.getTime())) return "";
+      function p(n) { return (n < 10 ? "0" : "") + n; }
+      return p(d.getHours()) + ":" + p(d.getMinutes());
+    }
+    function tovaryText(list) {
+      return (list || []).map(function (x) { return esc(x.nazvanie || ("товар " + x.tovarId)) + " ×" + esc(x.kolichestvo); }).join(", ");
+    }
+
+    function load() {
+      killMap();
+      box.innerHTML = '<div class="empty-state"><span class="eyebrow">Загрузка</span><p>Загружаем маршрут…</p></div>';
+      marshrutLoad(day, opts.kurierId || "").then(function (res) {
+        if (alive()) draw((res && res.zavozy) || []);
+      }).catch(function (e) {
+        if (alive()) box.innerHTML = '<div class="empty-state"><span class="eyebrow">Ошибка</span><p>' + esc(e && e.message ? e.message : "Не удалось загрузить маршрут") + '</p></div>';
+      });
+    }
+
+    function draw(list) {
+      killMap();
+      var okList = list.filter(function (z) { return z.status === "prinyat"; });
+      var failed = list.length - okList.length;
+      box.innerHTML =
+        '<div class="row-top" style="margin-bottom:10px;align-items:center;">' +
+          '<div><div class="screen-title" style="font-size:15px;margin:0;">' + (opts.title || "Маршрут дня") + '</div>' +
+          '<div class="screen-sub" style="margin:0;">' + okList.length + ' завозов' + (failed ? ' · ' + failed + ' отказов' : '') + '</div></div>' +
+          '<input type="date" class="mr-day" value="' + esc(day) + '" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;background:var(--surface);color:var(--text);font-size:12px;" />' +
+        '</div>' +
+        '<div id="' + mapEl + '" style="height:220px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:12px;isolation:isolate;display:' + (list.length && typeof L !== "undefined" ? "block" : "none") + ';"></div>' +
+        (list.length ? '<div class="row-list">' + list.map(function (z, i) {
+          var ok = z.status === "prinyat";
+          var n = ok ? okList.indexOf(z) + 1 : 0;
+          var foto = "";
+          if (z.foto && String(z.foto).indexOf("data:") === 0) foto = '<img src="' + esc(z.foto) + '" alt="Фото завоза" style="width:100%;max-height:140px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);" />';
+          else if (z.foto && opts.canPhoto) foto = '<a class="act-btn" style="text-decoration:none;" href="' + esc(z.foto) + '" target="_blank" rel="noopener">Открыть фото</a>';
+          return '<div class="row-card">' +
+            '<div class="row-top"><span class="id" style="font-size:14px;">' + (ok ? n + '. ' : '') + hm(z.vremya) + ' · ' + esc(z.punkt_nazvanie) + '</span>' +
+              '<span class="pill ' + (ok ? "delivered" : "cancelled") + '"><span class="dot"></span>' + (ok ? "Принят" : (z.status === "otkaz" ? "Отказ" : "Ошибка склада")) + '</span></div>' +
+            '<div class="row-sum"><span class="addr" style="white-space:normal;">' + tovaryText(z.tovary) + '</span></div>' +
+            '<div class="screen-sub" style="margin:0;">' + (z.rasstoyanie_m != null ? z.rasstoyanie_m + ' м от пункта' : 'расстояние не определено') +
+              (opts.who && z.kurier_imya ? ' · ' + esc(z.kurier_imya) : '') + '</div>' +
+            (!ok && z.prichina ? '<div style="background:var(--danger-bg);color:var(--danger);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;">' + esc(z.prichina) + '</div>' : '') +
+            foto +
+          '</div>';
+        }).join("") + '</div>' : '<div class="empty-state"><span class="eyebrow">Пусто</span><p>' + (day === zavozLocalDay(new Date()) ? 'Сегодня завозов ещё не было' : 'В этот день завозов не было') + '</p></div>');
+
+      box.querySelector(".mr-day").addEventListener("change", function (e) {
+        if (e.target.value) { day = e.target.value; load(); }
+      });
+      if (list.length && typeof L !== "undefined") buildMap(list, okList);
+    }
+
+    function buildMap(list, okList) {
+      var el = document.getElementById(mapEl);
+      if (!el) return;
+      var map = L.map(el);
+      box.__mrMap = map;
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(map);
+      var pts = [], line = [];
+      okList.forEach(function (z, i) {
+        if (z.punkt_lat == null || z.punkt_lng == null) return;
+        var ll = [Number(z.punkt_lat), Number(z.punkt_lng)];
+        pts.push(ll); line.push(ll);
+        var icon = L.divIcon({ className: "", html: '<div style="background:var(--accent,#2563eb);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);">' + (i + 1) + '</div>', iconSize: [24, 24], iconAnchor: [12, 12] });
+        L.marker(ll, { icon: icon }).bindTooltip(esc(hm(z.vremya) + " " + z.punkt_nazvanie)).addTo(map);
+      });
+      if (line.length > 1) L.polyline(line, { color: "#5b6472", weight: 3, dashArray: "6 6" }).addTo(map);
+      list.filter(function (z) { return z.status !== "prinyat" && z.lat != null; }).forEach(function (z) {
+        var ll = [Number(z.lat), Number(z.lng)];
+        pts.push(ll);
+        L.circleMarker(ll, { radius: 6, color: "#c0392b", weight: 2, fillOpacity: 0.4 }).bindTooltip("Отказ: " + esc(hm(z.vremya))).addTo(map);
+      });
+      if (pts.length === 1) map.setView(pts[0], 16);
+      else if (pts.length) map.fitBounds(pts, { padding: [24, 24] });
+      else map.setView([12.2388, 109.1967], 13);
+      setTimeout(function () { if (box.__mrMap === map) map.invalidateSize(); }, 60);
+    }
+
+    load();
+  }
+  // ---------------- Завозы курьеров (пульт владельца) ----------------
+  // Маршрут за день по всем курьерам: список по времени, карта, расстояние от пункта, ссылка на фото
+  // (фото закрытое, открывается только у владельца таблицы). Отрисовка общая, otdely/06-.../obshchee/marshrut-dnya.js
+  function renderZavozyCub(main) {
+    main.innerHTML = '<div class="screen-title-row"><div class="screen-title">Завозы</div>' +
+      '<div class="screen-sub">Что курьеры привезли на пункты: фото, геометка, время</div></div><div id="zv-cub"></div>';
+    renderMarshrutDnya(document.getElementById("zv-cub"), { kurierId: "", who: true, canPhoto: true, tabId: "zavozy", title: "Маршруты за день" });
+  }
+  (CUB_DEMO ? Promise.resolve() : loadSettings()).then(render, render);
+})();
+</script>
+</body>
+</html>
