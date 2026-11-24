@@ -1674,11 +1674,26 @@
   function viewAsHTML_() {
     var r = state.realAcc;
     if (DEMO || !r || r.tid !== state.telegramId) return "";
-    return '<select class="switch-btn" id="view-as" title="Смотреть как…">' +
-      '<option value="">' + (state.viewAs ? "← Я, владелец" : "Смотреть как…") + '</option>' +
-      POSITION_PRESETS.filter(function (p) { return p.id !== "owner"; }).map(function (p) {
-        return '<option value="' + p.id + '"' + (state.viewAs === p.id ? " selected" : "") + '>' + esc(p.name) + '</option>';
-      }).join("") + '</select>';
+    return '<button class="switch-btn" id="view-as" title="Смотреть как…">Сменить роль</button>';
+  }
+  function viewAsPick_(onPick, current) {
+    var old = document.getElementById("view-as-pick"); if (old) old.remove();
+    var box = document.createElement("div");
+    box.id = "view-as-pick";
+    box.style.cssText = "position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;";
+    var list = [{ id: "", name: "Владелец (я)", sub: "Полный контроль системы" }].concat(POSITION_PRESETS.filter(function (p) { return p.id !== "owner"; }));
+    box.innerHTML = '<div style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);width:100%;max-width:360px;max-height:80vh;overflow:auto;padding:8px;">' +
+      '<div style="font-size:12px;padding:8px 10px;opacity:.7;">Смотреть как… Это только вид: права на сервере остаются ваши.</div>' +
+      list.map(function (p) {
+        return '<button class="switch-btn" data-va="' + esc(p.id) + '" style="display:block;width:100%;text-align:left;margin:4px 0;padding:10px;font-size:14px;' + ((current || "") === p.id ? "font-weight:700;" : "") + '">' + esc(p.name) +
+          (p.sub ? '<div style="font-size:11px;opacity:.65;font-weight:400;">' + esc(p.sub) + '</div>' : '') + '</button>';
+      }).join("") + '</div>';
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("[data-va]") : null;
+      if (b) { box.remove(); onPick(b.getAttribute("data-va")); }
+      else if (e.target === box) box.remove();
+    });
+    document.body.appendChild(box);
   }
   function logoutClick_() { state.viewAs = ""; state.realAcc = null; changeRole(); }
 
@@ -1709,7 +1724,7 @@
 
     document.getElementById("switch-role").addEventListener("click", DEMO ? changeRole : logoutClick_);
     var va = document.getElementById("view-as");
-    if (va) va.addEventListener("change", function () { viewAsSet_(va.value); });
+    if (va) va.addEventListener("click", function () { viewAsPick_(viewAsSet_, state.viewAs); });
     shell.querySelectorAll("[data-tab]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         state.tab = btn.getAttribute("data-tab");
