@@ -1654,7 +1654,36 @@
     localStorage.removeItem("ppm_role");
     render();
   }
+  // «Смотреть как…» для владельца вне демо: показывает вкладки и кнопки выбранной должности. Только вид:
+  // сервер узнаёт человека по подписи Telegram и проверяет права владельца, как обычно. Другим должностям переключателя нет.
+  function viewAsCapture_() {
+    if (state.viewAs) return;
+    state.realAcc = can("people_manage") ? { tid: state.telegramId, positions: state.positions, perms: Object.keys(state.perms) } : null;
+  }
+  function viewAsSet_(id) {
+    var r = state.realAcc;
+    if (!r || r.tid !== state.telegramId) return;
+    state.viewAs = id || "";
+    applyAccess(id ? presetAccess([id]) : { positions: r.positions, perms: r.perms });
+    state.tab = NAV_BY_ROLE[state.role][0];
+    state.ordersLoaded = false;
+    state.metrics = null;
+    state.sotrudnikiLoaded = false;
+    renderApp();
+  }
+  function viewAsHTML_() {
+    var r = state.realAcc;
+    if (DEMO || !r || r.tid !== state.telegramId) return "";
+    return '<select class="switch-btn" id="view-as" title="Смотреть как…">' +
+      '<option value="">' + (state.viewAs ? "← Я, владелец" : "Смотреть как…") + '</option>' +
+      POSITION_PRESETS.filter(function (p) { return p.id !== "owner"; }).map(function (p) {
+        return '<option value="' + p.id + '"' + (state.viewAs === p.id ? " selected" : "") + '>' + esc(p.name) + '</option>';
+      }).join("") + '</select>';
+  }
+  function logoutClick_() { state.viewAs = ""; state.realAcc = null; changeRole(); }
+
   function renderApp() {
+    if (!DEMO) viewAsCapture_();
     var tabs = NAV_BY_ROLE[state.role];
     if (!state.tab || tabs.indexOf(state.tab) === -1) state.tab = tabs[0];
     var role = ROLE_MAP[state.role];
@@ -1662,7 +1691,8 @@
     shell.innerHTML =
       '<div class="topbar">' +
         '<div class="avatar">' + roleIcon(role.id, 16) + '</div>' +
-        '<div class="who"><div class="name">' + (state.telegramId ? "ID " + esc(state.telegramId) : "Без ID") + '</div><div class="role">' + role.label + '</div></div>' +
+        '<div class="who"><div class="name">' + (state.telegramId ? "ID " + esc(state.telegramId) : "Без ID") + '</div><div class="role">' + role.label + (state.viewAs ? ' · просмотр' : '') + '</div></div>' +
+        viewAsHTML_() +
         '<button class="switch-btn" id="switch-role">' + (DEMO ? "Сменить роль" : "Выйти") + '</button>' +
       '</div>' +
       '<div class="status-banner" id="status-banner"></div>' +
@@ -1677,7 +1707,9 @@
       '</nav>' +
       '<div class="toast" id="toast"></div>';
 
-    document.getElementById("switch-role").addEventListener("click", changeRole);
+    document.getElementById("switch-role").addEventListener("click", DEMO ? changeRole : logoutClick_);
+    var va = document.getElementById("view-as");
+    if (va) va.addEventListener("change", function () { viewAsSet_(va.value); });
     shell.querySelectorAll("[data-tab]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         state.tab = btn.getAttribute("data-tab");
@@ -3378,7 +3410,7 @@
       if (Number(a.stuckQueue) > 0) alerts += alertDiv("warn", "Висят в очереди дольше 30 мин: " + a.stuckQueue, "orders");
       if (Number(a.staleCheckpoint) > 0) alerts += alertDiv("warn", "Курьер молчит (чекпоинт просрочен): " + a.staleCheckpoint, "orders");
       if (a.lowStock && a.lowStock.length) {
-        alerts += alertDiv("warn", "Заканчиваются: " + a.lowStock.map(function (p) { return esc(p.name) + " " + p.ostatok + " г"; }).join(", "), "products");
+        alerts += alertDiv("warn", "Заканчиваются: " + a.lowStock.map(function (p) { return esc(p.name) + " " + p.ostatok + " " + unitShort(); }).join(", "), "products");
       }
       if (Number(a.debtTotal) > 0) alerts += alertDiv("danger", "Должники: " + money(a.debtTotal), "orders");
       if (!alerts) alerts = '<div style="background:var(--ok-bg);color:var(--ok);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:13px;">Всё спокойно — тревог нет</div>';

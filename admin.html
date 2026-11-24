@@ -879,18 +879,37 @@
       render();
     });
   }
+  // «Смотреть как…» для владельца: меню выбранной должности. Только вид, сервер проверяет права по пропуску как обычно.
+  function cubViewAsSet_(id) {
+    if (!state.cubRealPerms) return;
+    var p = POSITION_PRESETS.filter(function (x) { return x.id === id; })[0];
+    state.cubViewAs = p ? id : "";
+    state.perms = p ? permsObj_(p.perms) : state.cubRealPerms;
+    renderApp();
+  }
+  function cubViewAsHTML_() {
+    if (CUB_DEMO || !state.cubRealPerms) return "";
+    return '<select class="switch-btn" id="cub-view-as" title="Смотреть как…">' +
+      '<option value="">' + (state.cubViewAs ? "← Я, владелец" : "Смотреть как…") + '</option>' +
+      POSITION_PRESETS.filter(function (p) { return p.id !== "owner"; }).map(function (p) {
+        return '<option value="' + p.id + '"' + (state.cubViewAs === p.id ? " selected" : "") + '>' + esc(p.name) + '</option>';
+      }).join("") + '</select>';
+  }
+
   function renderApp() {
+    if (!state.cubViewAs) state.cubRealPerms = cubCan("people_manage") ? state.perms : null;
     // Вкладки по разрешениям человека; сервер всё равно проверяет каждый запрос
     var tabs = TABS.filter(function (tb) { return cubCanAny(CUB_TAB_NEED[tb.id] || []); });
-    if (!tabs.length) { cubLogout_(); return; }
-    if (!tabs.some(function (tb) { return tb.id === state.tab; })) state.tab = tabs[0].id;
+    if (!tabs.length && !state.cubViewAs) { cubLogout_(); return; }
+    if (tabs.length && !tabs.some(function (tb) { return tb.id === state.tab; })) state.tab = tabs[0].id;
     // Полные настройки (с ключами для вошедшего) подгружаем один раз после входа
     if (!CUB_DEMO && !state.settingsFull) { state.settingsFull = true; loadSettings().then(function () { renderApp(); }); }
     var roleLabel = (state.positionNames && state.positionNames.length) ? state.positionNames.join(" + ") : (state.role === "buh" ? "Бухгалтер" : state.role === "owner" ? "Владелец" : "Сотрудник");
     shell.innerHTML =
       '<div class="topbar">' +
         '<div class="avatar">' + MARK + '</div>' +
-        '<div class="who"><div class="name">' + esc(t("pub_cub_name") || "ЦУБ") + '</div><div class="role">' + esc(roleLabel) + '</div></div>' +
+        '<div class="who"><div class="name">' + esc(t("pub_cub_name") || "ЦУБ") + '</div><div class="role">' + esc(roleLabel + (state.cubViewAs ? " · просмотр" : "")) + '</div></div>' +
+        cubViewAsHTML_() +
         '<button class="switch-btn" id="cub-logout">Выйти</button>' +
       '</div>' +
       '<main id="main"></main>' +
@@ -901,7 +920,11 @@
       '</nav>' +
       '<div class="toast" id="toast"></div>';
 
+    var cva = document.getElementById("cub-view-as");
+    if (cva) cva.addEventListener("change", function () { cubViewAsSet_(cva.value); });
     document.getElementById("cub-logout").addEventListener("click", function () {
+      state.cubViewAs = "";
+      state.cubRealPerms = null;
       localStorage.removeItem("cub_id");
       localStorage.removeItem("cub_role");
       localStorage.removeItem("cub_token");
@@ -920,6 +943,7 @@
       });
     });
 
+    if (!tabs.length) { document.getElementById("main").innerHTML = '<p class="hint-note" style="padding:16px;">У этой должности в пульте вкладок нет: её работа в самом приложении.</p>'; return; }
     renderTab();
   }
 
